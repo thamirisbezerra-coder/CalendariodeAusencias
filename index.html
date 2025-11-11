@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Ausências</title>
+    <!-- Carrega o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carrega a biblioteca de ícones Lucide -->
+    <script type="module" src="https://unpkg.com/lucide-react@latest/dist/lucide-react.js"></script>
+    <script src="https://unpkg.com/lucide-icons@latest/dist/lucide.min.js"></script>
+    <style>
+        /* Fonte Inter (como no Google Calendar) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f8f9fa; /* Um cinza muito claro */
+        }
+
+        /* Estilo para os dias do calendário */
+        .calendar-day {
+            min-height: 120px; /* Um pouco mais de altura */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: background-color 0.15s ease-in-out;
+            border-bottom: 1px solid #e0e0e0; /* Linha sutil separando as semanas */
+            border-left: 1px solid #e0e0e0;
+        }
+        
+        /* Remove borda da primeira coluna */
+        .calendar-day:nth-child(7n+1) {
+            border-left: none;
+        }
+
+        /* Estilo para dias fora do mês corrente */
+        .other-month {
+            opacity: 0.5;
+            background-color: #fdfdfd;
+        }
+        .other-month:hover {
+            background-color: #fdfdfd !important;
+            cursor: default !important;
+        }
+
+        /* Marcador de ausência (usado NO MODAL) */
+        .absence-marker {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .marker-medical { background-color: #ef4444; } /* Vermelho */
+        .marker-time_bank { background-color: #3b82f6; } /* Azul */
+        .marker-personal { background-color: #f97316; } /* Laranja */
+
+        /* PÍLULAS (usadas NO CALENDÁRIO) */
+        .absence-pill {
+            padding: 2px 8px; /* Mais padding horizontal */
+            border-radius: 4px;
+            font-size: 0.75rem; /* 12px */
+            line-height: 1rem; /* 16px */
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border: 1px solid transparent; /* Borda sutil */
+        }
+        .pill-medical { 
+            background-color: #fee2e2; /* Vermelho claro */
+            color: #b91c1c; /* Vermelho escuro */
+            border-color: #fecaca;
+        } 
+        .pill-time_bank { 
+            background-color: #dbeafe; /* Azul claro */
+            color: #1d4ed8; /* Azul escuro */
+            border-color: #bfdbfe;
+        } 
+        .pill-personal { 
+            background-color: #ffedd5; /* Laranja claro */
+            color: #c2410c; /* Laranja escuro */
+            border-color: #fed7aa;
+        }
+        /* NOVA PÍLULA (para Eventos/Feriados) */
+        .pill-event { 
+            background-color: #ede9fe; /* Roxo claro */
+            color: #5b21b6; /* Roxo escuro */
+            border-color: #d8b4fe;
+        }
+        
+        /* Ocultar modal por padrão */
+        #absenceModal {
+            display: none;
+        }
+
+        /* (NOVO) Estilos das Abas do Modal */
+        .tab-button {
+            padding: 12px 16px;
+            font-weight: 500;
+            color: #6b7280; /* text-gray-500 */
+            border-bottom: 3px solid transparent;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .tab-button:hover {
+            color: #111827; /* text-gray-900 */
+        }
+        .tab-button.active {
+            color: #2563eb; /* text-blue-600 */
+            border-color: #2563eb; /* border-blue-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-full lg:max-w-7xl">
+        
+        <!-- Cabeçalho -->
+        <header class="mb-6 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Calendário de Ausências</h1>
+                <p class="text-base text-gray-600 mt-1">Gerencie as ausências do seu setor.</p>
+            </div>
+            <div class="text-sm text-gray-600 mt-4 md:mt-0 md:text-right">
+                ID do Calendário (para compartilhar):<br>
+                <span id="userIdDisplay" class="font-mono bg-gray-200 px-2 py-1 rounded-md text-gray-800">carregando...</span>
+            </div>
+        </header>
+
+        <!-- Bloco de Orientações de Uso -->
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+            <svg class="w-6 h-6 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            <div>
+                <h4 class="text-base font-semibold text-blue-800">Orientações de Uso</h4>
+                <p class="text-sm text-blue-700 mt-1">
+                    Sempre que for se ausentar (médico, banco de horas, etc.), por favor, anote no calendário clicando no dia correspondente. Isso é essencial para sabermos quem estará presente no setor.
+                </p>
+            </div>
+        </div>
+
+        <!-- Container do Calendário -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            
+            <!-- Navegação do Calendário -->
+            <div class="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <button id="prevMonthBtn" class="p-2 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="nextMonthBtn" class="p-2 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                    <h2 id="monthYearHeader" class="text-xl font-semibold text-gray-800 ml-2"></h2>
+                </div>
+                <button id="todayBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                    Hoje
+                </button>
+            </div>
+
+            <!-- Dias da Semana -->
+            <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Dom</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Seg</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ter</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qua</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qui</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sex</div>
+                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sáb</div>
+            </div>
+
+            <!-- Grid dos Dias -->
+            <div id="calendarGrid" class="grid grid-cols-7 bg-gray-100">
+                <!-- Dias serão gerados pelo JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Adicionar/Ver Ausência -->
+    <div id="absenceModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+            
+            <!-- Cabeçalho do Modal (Data e Botão Fechar) -->
+            <div class="flex justify-between items-center p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <h3 class="text-xl font-semibold text-gray-900">
+                    <span id="modalDateHeader"></span>
+                </h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- (NOVO) Navegação das Abas -->
+            <div class="border-b border-gray-200 bg-gray-50 sticky top-[73px] z-10"> <!-- 73px = altura do cabeçalho do modal */ -->
+                <nav class="flex" aria-label="Tabs">
+                    <button id="tabAusenciasBtn" class="tab-button active">
+                        Ausências
+                    </button>
+                    <button id="tabEventosBtn" class="tab-button">
+                        Eventos/Feriados
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Conteúdo do Modal (com Abas) -->
+            <div class="p-5 md:p-6 overflow-y-auto">
+                
+                <!-- (NOVO) Painel da Aba Ausências -->
+                <div id="tabAusenciasContent" class="tab-panel">
+                    <!-- Seção para Adicionar Nova Ausência -->
+                    <div class="mb-6 pb-6 border-b border-gray-200">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Adicionar Nova Ausência</h4>
+                        <form id="absenceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Data (oculta, preenchida pelo JS) -->
+                            <input type="hidden" id="absenceDate">
+
+                            <!-- Nome do Colaborador -->
+                            <div class="md:col-span-2">
+                                <label for="collaboratorName" class="block text-sm font-medium text-gray-700 mb-1">Colaborador</label>
+                                <input type="text" id="collaboratorName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
+
+                            <!-- Tipo de Ausência -->
+                            <div>
+                                <label for="absenceType" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                                <select id="absenceType" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="medical">Atestado Médico</option>
+                                    <option value="time_bank">Banco de Horas</option>
+                                    <option value="personal">Motivo Pessoal</option>
+                                </select>
+                            </div>
+
+                            <!-- Dia Todo -->
+                            <div class="flex items-end pb-2">
+                                <div class="flex items-center h-full">
+                                    <input id="fullDay" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="fullDay" class="ml-2 block text-sm font-medium text-gray-700">Dia todo</label>
+                                </div>
+                            </div>
+
+                            <!-- Horários (ocultos se 'Dia Todo' estiver marcado) -->
+                            <div id="timeFields" class="grid grid-cols-2 gap-4 md:col-span-2">
+                                <div>
+                                    <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Hora Início</label>
+                                    <input type="time" id="startTime" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
+                                    <input type="time" id="endTime" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+
+                            <!-- Observações -->
+                            <div class="md:col-span-2">
+                                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Observações (opcional)</label>
+                                <textarea id="notes" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+
+                            <!-- Botão de Salvar -->
+                            <div class="md:col-span-2 text-right">
+                                <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Salvar Ausência
+                                </button>
+                            </div>
+                        </form>
+                        <div id="formError" class="text-red-600 text-sm mt-2 hidden"></div>
+                    </div>
+
+                    <!-- Seção para Listar Ausências do Dia -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Ausências Registradas</h4>
+                        <div id="absencesList" class="space-y-3">
+                            <!-- Lista de ausências será preenchida pelo JS -->
+                            <p id="noAbsencesMsg" class="text-gray-500">Nenhuma ausência registrada para este dia.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (NOVO) Painel da Aba Eventos -->
+                <div id="tabEventosContent" class="tab-panel hidden">
+                    <!-- Seção para Adicionar Evento/Feriado -->
+                    <div class="mb-6 pb-6 border-b border-gray-200">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Adicionar Evento ou Feriado</h4>
+                        <form id="eventForm" class="grid grid-cols-1 gap-4">
+                            <!-- Nome do Evento -->
+                            <div>
+                                <label for="eventName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Evento/Feriado</label>
+                                <input type="text" id="eventName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500" required>
+                            </div>
+
+                            <!-- Botão de Salvar -->
+                            <div class="text-right">
+                                <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                                    Salvar Evento
+                                </button>
+                            </div>
+                        </form>
+                        <div id="eventFormError" class="text-red-600 text-sm mt-2 hidden"></div>
+                    </div>
+
+                    <!-- Seção para Listar Eventos do Dia -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Eventos/Feriados Registrados</h4>
+                        <div id="eventsList" class="space-y-3">
+                            <p id="noEventsMsg" class="text-gray-500">Nenhum evento registrado para este dia.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase e Módulos JS -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            onSnapshot,
+            query,
+            doc,
+            deleteDoc,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Variáveis Globais de Configuração ---
+        
+        // Configuração do Firebase (fornecida pelo ambiente)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Variáveis de Estado da Aplicação ---
+        let db;
+        let auth;
+        let userId;
+        let currentDate = new Date(); // Data atual para visualização do calendário
+        let allAbsences = []; // Cache local de todas as ausências
+        let absencesCollectionRef;
+        let allEvents = []; // Cache local de todos os eventos
+        let eventsCollectionRef; // Referência para coleção de eventos
+
+        // --- Elementos do DOM ---
+        const calendarGrid = document.getElementById('calendarGrid');
+        const monthYearHeader = document.getElementById('monthYearHeader');
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        const todayBtn = document.getElementById('todayBtn');
+        const modal = document.getElementById('absenceModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalDateHeader = document.getElementById('modalDateHeader');
+        const absenceForm = document.getElementById('absenceForm');
+        const absenceDateInput = document.getElementById('absenceDate');
+        const fullDayCheckbox = document.getElementById('fullDay');
+        const timeFields = document.getElementById('timeFields');
+        const absencesList = document.getElementById('absencesList');
+        const noAbsencesMsg = document.getElementById('noAbsencesMsg');
+        const formError = document.getElementById('formError');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        // Elementos do formulário de Eventos
+        const eventForm = document.getElementById('eventForm');
+        const eventFormError = document.getElementById('eventFormError');
+        const eventsList = document.getElementById('eventsList');
+        const noEventsMsg = document.getElementById('noEventsMsg');
+        
+        // (NOVOS) Elementos das Abas
+        const tabAusenciasBtn = document.getElementById('tabAusenciasBtn');
+        const tabEventosBtn = document.getElementById('tabEventosBtn');
+        const tabAusenciasContent = document.getElementById('tabAusenciasContent');
+        const tabEventosContent = document.getElementById('tabEventosContent');
+
+        // --- Funções de Inicialização ---
+
+        /**
+         * Inicializa o Firebase e a autenticação.
+         */
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Monitora o estado da autenticação
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        console.log('Usuário autenticado:', user.uid);
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId; // Mostra o ID do usuário
+                        
+                        // Define a referência da coleção (PÚBLICA) - Ausências
+                        const absenceCollectionPath = `artifacts/${appId}/public/data/absences`;
+                        absencesCollectionRef = collection(db, absenceCollectionPath);
+                        
+                        // Define a referência da coleção (PÚBLICA) - Eventos
+                        const eventCollectionPath = `artifacts/${appId}/public/data/events`;
+                        eventsCollectionRef = collection(db, eventCollectionPath);
+                        
+                        // Inicia o listener de ausências
+                        setupAbsenceListener();
+                        // Inicia o listener de eventos
+                        setupEventListener();
+
+                    } else {
+                        console.log('Nenhum usuário. Tentando autenticar...');
+                        userIdDisplay.textContent = 'autenticando...';
+                        await authenticateUser();
+                    }
+                });
+
+                // Tenta autenticar o usuário imediatamente se não houver um
+                if (!auth.currentUser) {
+                    await authenticateUser();
+                }
+
+            } catch (error) {
+                console.error("Erro ao inicializar o Firebase:", error);
+                document.body.innerHTML = "<p>Erro ao conectar ao banco de dados. Verifique o console.</p>";
+            }
+        }
+
+        /**
+         * Autentica o usuário (com token, se disponível, ou anonimamente).
+         */
+        async function authenticateUser() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Autenticado com token customizado.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Autenticado anonimamente.");
+                }
+            } catch (error) {
+                console.error("Erro na autenticação:", error);
+            }
+        }
+        
+        /**
+         * Configura o listener (onSnapshot) para as ausências.
+         * Isso mantém a lista 'allAbsences' e o calendário sincronizados.
+         */
+        function setupAbsenceListener() {
+            if (!absencesCollectionRef) return;
+
+            const q = query(absencesCollectionRef);
+            
+            onSnapshot(q, (snapshot) => {
+                allAbsences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Ausências carregadas:", allAbsences.length);
+                renderCalendar(); // Redesenha o calendário com os novos dados
+            }, (error) => {
+                console.error("Erro ao escutar ausências:", error);
+            });
+        }
+        
+        /**
+         * Configura o listener (onSnapshot) para os eventos.
+         */
+        function setupEventListener() {
+            if (!eventsCollectionRef) return;
+
+            const q = query(eventsCollectionRef);
+            
+            onSnapshot(q, (snapshot) => {
+                allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Eventos carregados:", allEvents.length);
+                renderCalendar(); // Redesenha o calendário com os novos dados
+            }, (error) => {
+                console.error("Erro ao escutar eventos:", error);
+            });
+        }
+
+
+        // --- Funções do Calendário ---
+
+        /**
+         * Renderiza o grid do calendário para o mês em 'currentDate'.
+         */
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth(); // 0-11
+
+            // Atualiza o cabeçalho (ex: "Novembro 2025")
+            monthYearHeader.textContent = new Intl.DateTimeFormat('pt-BR', {
+                month: 'long',
+                year: 'numeric'
+            }).format(currentDate);
+
+            calendarGrid.innerHTML = ''; // Limpa o grid
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 (Dom) - 6 (Sáb)
+            const daysInMonth = lastDayOfMonth.getDate();
+
+            const lastDayOfPrevMonth = new Date(year, month, 0);
+            const daysInPrevMonth = lastDayOfPrevMonth.getDate();
+
+            // 1. Adiciona dias do mês anterior (para preencher o grid)
+            for (let i = firstDayOfWeek; i > 0; i--) {
+                const day = daysInPrevMonth - i + 1;
+                const dateStr = getISODate(new Date(year, month - 1, day));
+                calendarGrid.appendChild(
+                    createDayElement(day, dateStr, true)
+                );
+            }
+
+            // 2. Adiciona dias do mês atual
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = getISODate(new Date(year, month, day));
+                calendarGrid.appendChild(
+                    createDayElement(day, dateStr, false)
+                );
+            }
+
+            // 3. Adiciona dias do próximo mês (para preencher o grid)
+            // Ajuste para garantir 6 linhas (total 42 células) se necessário
+            const totalCells = firstDayOfWeek + daysInMonth;
+            const remainingCells = totalCells <= 35 ? 42 - totalCells : 42 - totalCells; // Garante 6 linhas
+            
+            for (let i = 1; i <= remainingCells; i++) {
+                const dateStr = getISODate(new Date(year, month + 1, i));
+                calendarGrid.appendChild(
+                    createDayElement(i, dateStr, true)
+                );
+            }
+        }
+
+        /**
+         * Cria um elemento <div> para um dia no calendário.
+         * @param {number} day - O número do dia (ex: 15)
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         * @param {boolean} isOtherMonth - Se o dia pertence a outro mês
+         */
+        function createDayElement(day, dateStr, isOtherMonth) {
+            const dayWrapper = document.createElement('div');
+            dayWrapper.className = `calendar-day p-2 bg-white relative ${isOtherMonth ? 'other-month' : 'hover:bg-gray-50 cursor-pointer'}`;
+            dayWrapper.dataset.date = dateStr;
+
+            const dayNumber = document.createElement('span');
+            dayNumber.className = 'text-sm font-medium mb-1'; // Margem inferior adicionada
+            dayNumber.textContent = day;
+            
+            // Marca o dia de hoje
+            const todayStr = getISODate(new Date());
+            if (dateStr === todayStr && !isOtherMonth) {
+                // Novo estilo para "Hoje" (círculo azul apenas no número)
+                dayNumber.className += ' bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center';
+            } else {
+                 dayNumber.className += ' text-gray-700 w-6 h-6 flex items-center justify-center'; // Garante alinhamento
+            }
+            
+            dayWrapper.appendChild(dayNumber);
+
+            // Adiciona lista de ausências (Pílulas)
+            const absencesOnThisDay = getAbsencesForDate(dateStr);
+            const eventsOnThisDay = getEventsForDate(dateStr); // Busca eventos
+            
+            if (!isOtherMonth) {
+                // Container para as pílulas de ausência
+                const itemsListEl = document.createElement('div');
+                // flex-grow: ocupa espaço; overflow-y-auto: barra de rolagem se necessário
+                // Ajuste de altura máxima: 120px (total) - ~28px (número) - 8px (padding) - 4px (mb) = ~80px
+                itemsListEl.className = 'flex-grow overflow-y-auto max-h-[80px] mt-1 space-y-1';
+
+                // 1. Renderiza Eventos/Feriados
+                if (eventsOnThisDay.length > 0) {
+                    eventsOnThisDay.forEach(event => {
+                        const eventEl = document.createElement('div');
+                        // Aplica as classes de pílula
+                        eventEl.className = `absence-pill pill-event`;
+                        eventEl.textContent = escapeHTML(event.eventName);
+                        eventEl.title = escapeHTML(event.eventName);
+                        itemsListEl.appendChild(eventEl);
+                    });
+                }
+
+                // 2. Renderiza Ausências
+                if (absencesOnThisDay.length > 0) {
+                    absencesOnThisDay.forEach(absence => {
+                        const absenceEl = document.createElement('div');
+                        // Aplica as classes de pílula
+                        absenceEl.className = `absence-pill pill-${absence.absenceType}`;
+                        absenceEl.textContent = escapeHTML(absence.collaboratorName);
+                        // Tooltip para ver o nome completo e o tipo
+                        absenceEl.title = `${escapeHTML(absence.collaboratorName)} - ${getAbsenceTypeLabel(absence.absenceType)}`;
+                        itemsListEl.appendChild(absenceEl);
+                    });
+                }
+                dayWrapper.appendChild(itemsListEl);
+            }
+
+            // Adiciona evento de clique (apenas para dias do mês atual)
+            if (!isOtherMonth) {
+                dayWrapper.addEventListener('click', () => {
+                    openModal(dateStr);
+                });
+            }
+
+            return dayWrapper;
+        }
+
+
+        // --- Funções do Modal ---
+
+        /**
+         * (NOVO) Controla a visibilidade das abas.
+         * @param {'ausencias' | 'eventos'} tabName
+         */
+        function showTab(tabName) {
+            if (tabName === 'ausencias') {
+                tabAusenciasContent.classList.remove('hidden');
+                tabEventosContent.classList.add('hidden');
+                tabAusenciasBtn.classList.add('active');
+                tabEventosBtn.classList.remove('active');
+            } else {
+                tabAusenciasContent.classList.add('hidden');
+                tabEventosContent.classList.remove('hidden');
+                tabAusenciasBtn.classList.remove('active');
+                tabEventosBtn.classList.add('active');
+            }
+        }
+
+        /**
+         * Abre o modal para uma data específica.
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         */
+        function openModal(dateStr) {
+            const date = parseISODate(dateStr);
+            
+            // Formata a data para o cabeçalho (ex: "11 de Novembro, 2025")
+            modalDateHeader.textContent = new Intl.DateTimeFormat('pt-BR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            }).format(date);
+            
+            // Define a data oculta no formulário
+            absenceDateInput.value = dateStr;
+
+            // Reseta o formulário de ausência
+            absenceForm.reset();
+            formError.classList.add('hidden');
+            formError.textContent = '';
+            toggleTimeFields(); // Garante que os campos de hora estão no estado correto
+            
+            // Reseta o formulário de evento
+            eventForm.reset();
+            eventFormError.classList.add('hidden');
+            eventFormError.textContent = '';
+
+            // Carrega e exibe as ausências existentes para este dia
+            renderAbsencesForDay(dateStr);
+            // Carrega e exibe os eventos existentes para este dia
+            renderEventsForDay(dateStr);
+
+            // (NOVO) Reseta para a primeira aba (Ausências)
+            showTab('ausencias');
+
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Fecha o modal.
+         */
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        /**
+         * Atualiza a visibilidade dos campos de hora baseado no checkbox 'Dia Todo'.
+         */
+        function toggleTimeFields() {
+            if (fullDayCheckbox.checked) {
+                timeFields.classList.add('hidden');
+            } else {
+                timeFields.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Renderiza a lista de ausências para o dia selecionado dentro do modal.
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         */
+        function renderAbsencesForDay(dateStr) {
+            const absencesOnThisDay = getAbsencesForDate(dateStr);
+            absencesList.innerHTML = ''; // Limpa a lista anterior
+
+            if (absencesOnThisDay.length === 0) {
+                absencesList.appendChild(noAbsencesMsg); // Mostra a msg "Nenhuma ausência"
+                noAbsencesMsg.style.display = 'block';
+            } else {
+                noAbsencesMsg.style.display = 'none';
+                
+                absencesOnThisDay.forEach(absence => {
+                    const absenceEl = document.createElement('div');
+                    absenceEl.className = 'p-3 border rounded-md bg-gray-50 flex justify-between items-start group'; // Adicionado 'group'
+                    
+                    let durationText = absence.fullDay
+                        ? "Dia todo"
+                        : `das ${absence.startTime || '?'} às ${absence.endTime || '?'}`;
+
+                    let notesText = absence.notes ? `<p class="text-xs text-gray-500 mt-1 italic">Obs: ${escapeHTML(absence.notes)}</p>` : '';
+
+                    absenceEl.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-gray-800">${escapeHTML(absence.collaboratorName)}</p>
+                            <p class="text-sm text-gray-600 flex items-center">
+                                <span class="absence-marker inline-block marker-${absence.absenceType}"></span>
+                                ${getAbsenceTypeLabel(absence.absenceType)} (${durationText})
+                            </p>
+                            ${notesText}
+                        </div>
+                        <button data-id="${absence.id}" class="delete-btn text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    absencesList.appendChild(absenceEl);
+                });
+                
+                // Adiciona listeners aos botões de deletar
+                absencesList.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', handleDeleteAbsence);
+                });
+            }
+        }
+        
+        /**
+         * Renderiza a lista de eventos para o dia selecionado dentro do modal.
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         */
+        function renderEventsForDay(dateStr) {
+            const eventsOnThisDay = getEventsForDate(dateStr);
+            eventsList.innerHTML = ''; // Limpa a lista anterior
+
+            if (eventsOnThisDay.length === 0) {
+                eventsList.appendChild(noEventsMsg); // Mostra a msg "Nenhum evento"
+                noEventsMsg.style.display = 'block';
+            } else {
+                noEventsMsg.style.display = 'none';
+                
+                eventsOnThisDay.forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'p-3 border rounded-md bg-purple-50 flex justify-between items-start group';
+                    
+                    eventEl.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-purple-800">${escapeHTML(event.eventName)}</p>
+                        </div>
+                        <button data-id="${event.id}" class="delete-event-btn text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    eventsList.appendChild(eventEl);
+                });
+                
+                // Adiciona listeners aos botões de deletar
+                eventsList.querySelectorAll('.delete-event-btn').forEach(btn => {
+                    btn.addEventListener('click', handleDeleteEvent);
+                });
+            }
+        }
+
+
+        // --- Funções de Manipulação de Dados (Firestore) ---
+
+        /**
+         * Salva uma nova ausência no Firestore.
+         */
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            formError.classList.add('hidden');
+            
+            const collaboratorName = document.getElementById('collaboratorName').value;
+            const absenceType = document.getElementById('absenceType').value;
+            const fullDay = fullDayCheckbox.checked;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const notes = document.getElementById('notes').value;
+            const absenceDate = absenceDateInput.value;
+
+            // Validação
+            if (!collaboratorName) {
+                showFormError("O nome do colaborador é obrigatório.");
+                return;
+            }
+            if (!fullDay && (!startTime || !endTime)) {
+                showFormError("Para ausência parcial, as horas de início e fim são obrigatórias.");
+                return;
+            }
+             if (!fullDay && startTime >= endTime) {
+                showFormError("A hora de início deve ser anterior à hora de fim.");
+                return;
+            }
+
+            try {
+                const newAbsence = {
+                    collaboratorName,
+                    absenceType,
+                    fullDay,
+                    startTime: fullDay ? null : startTime,
+                    endTime: fullDay ? null : endTime,
+                    notes,
+                    absenceDate, // 'YYYY-MM-DD'
+                    createdAt: serverTimestamp(),
+                    createdBy: userId // Guarda quem criou
+                };
+
+                // Adiciona o documento ao Firestore
+                await addDoc(absencesCollectionRef, newAbsence);
+
+                console.log("Ausência salva com sucesso!");
+                
+                // O onSnapshot cuidará de atualizar a UI.
+                // Apenas resetamos o formulário e recarregamos a lista do modal.
+                absenceForm.reset();
+                toggleTimeFields();
+                renderAbsencesForDay(absenceDate); // Atualiza a lista no modal imediatamente
+
+            } catch (error) {
+                console.error("Erro ao salvar ausência:", error);
+                showFormError("Ocorreu um erro ao salvar. Tente novamente.");
+            }
+        }
+        
+        /**
+         * Salva um novo evento no Firestore.
+         */
+        async function handleEventFormSubmit(e) {
+            e.preventDefault();
+            eventFormError.classList.add('hidden');
+            
+            const eventName = document.getElementById('eventName').value;
+            const absenceDate = absenceDateInput.value; // Pega a data do modal
+
+            // Validação
+            if (!eventName) {
+                showEventFormError("O nome do evento é obrigatório.");
+                return;
+            }
+
+            try {
+                const newEvent = {
+                    eventName,
+                    absenceDate, // 'YYYY-MM-DD'
+                    createdAt: serverTimestamp(),
+                    createdBy: userId // Guarda quem criou
+                };
+
+                // Adiciona o documento ao Firestore (na coleção de eventos)
+                await addDoc(eventsCollectionRef, newEvent);
+
+                console.log("Evento salvo com sucesso!");
+                
+                eventForm.reset();
+                renderEventsForDay(absenceDate); // Atualiza a lista no modal imediatamente
+
+            } catch (error) {
+                console.error("Erro ao salvar evento:", error);
+                showEventFormError("Ocorreu um erro ao salvar. Tente novamente.");
+            }
+        }
+        
+        /**
+         * Deleta uma ausência do Firestore.
+         */
+        async function handleDeleteAbsence(e) {
+            // Usamos .currentTarget para pegar o botão, mesmo se clicarmos no ícone SVG
+            const button = e.currentTarget;
+            const docId = button.dataset.id;
+            
+            if (!docId) {
+                console.error("ID do documento não encontrado no botão.");
+                return;
+            }
+
+            // Simples confirmação (o ideal seria um modal customizado)
+            if (!window.confirm("Tem certeza que deseja excluir esta ausência?")) {
+                return;
+            }
+
+            try {
+                const docRef = doc(db, absencesCollectionRef.path, docId);
+                await deleteDoc(docRef);
+                console.log("Ausência deletada com sucesso!");
+                // O onSnapshot cuidará de atualizar o calendário.
+                
+                // Para atualizar a lista do modal imediatamente:
+                const currentModalDate = absenceDateInput.value;
+                if(currentModalDate) {
+                    renderAbsencesForDay(currentModalDate);
+                }
+
+            } catch (error) {
+                console.error("Erro ao deletar ausência:", error);
+                alert("Erro ao excluir. Tente novamente.");
+            }
+        }
+
+        /**
+         * Deleta um evento do Firestore.
+         */
+        async function handleDeleteEvent(e) {
+            const button = e.currentTarget;
+            const docId = button.dataset.id;
+            
+            if (!docId) {
+                console.error("ID do documento não encontrado no botão.");
+                return;
+            }
+
+            if (!window.confirm("Tem certeza que deseja excluir este evento?")) {
+                return;
+            }
+
+            try {
+                const docRef = doc(db, eventsCollectionRef.path, docId);
+                await deleteDoc(docRef);
+                console.log("Evento deletado com sucesso!");
+                
+                const currentModalDate = absenceDateInput.value;
+                if(currentModalDate) {
+                    renderEventsForDay(currentModalDate);
+                }
+
+            } catch (error) {
+                console.error("Erro ao deletar evento:", error);
+                alert("Erro ao excluir. Tente novamente.");
+            }
+        }
+
+        // --- Funções Utilitárias ---
+
+        /**
+         * Retorna a lista de ausências para uma data específica.
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         */
+        function getAbsencesForDate(dateStr) {
+            // Ordena por nome para consistência
+            return allAbsences
+                .filter(a => a.absenceDate === dateStr)
+                .sort((a, b) => a.collaboratorName.localeCompare(b.collaboratorName));
+        }
+        
+        /**
+         * Retorna a lista de eventos para uma data específica.
+         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         */
+        function getEventsForDate(dateStr) {
+            return allEvents
+                .filter(e => e.absenceDate === dateStr)
+                .sort((a, b) => a.eventName.localeCompare(b.eventName));
+        }
+        
+        /**
+         * Converte um objeto Date para uma string 'YYYY-MM-DD'.
+         * @param {Date} date
+         */
+        function getISODate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        /**
+         * Converte uma string 'YYYY-MM-DD' para um objeto Date (considerando fuso horário local).
+         * @param {string} dateStr
+         */
+        function parseISODate(dateStr) {
+            const parts = dateStr.split('-'); // YYYY, MM, DD
+            // Note: new Date(year, monthIndex, day)
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        /**
+         * Retorna o rótulo legível para um tipo de ausência.
+         * @param {string} type - ex: 'medical'
+         */
+        function getAbsenceTypeLabel(type) {
+            switch (type) {
+                case 'medical': return 'Atestado Médico';
+                case 'time_bank': return 'Banco de Horas';
+                case 'personal': return 'Motivo Pessoal';
+                default: return 'Outro';
+            }
+        }
+
+        /**
+         * Mostra uma mensagem de erro no formulário.
+         * @param {string} message
+         */
+        function showFormError(message) {
+            formError.textContent = message;
+            formError.classList.remove('hidden');
+        }
+        
+        /**
+         * Mostra uma mensagem de erro no formulário de evento.
+         * @param {string} message
+         */
+        function showEventFormError(message) {
+            eventFormError.textContent = message;
+            eventFormError.classList.remove('hidden');
+        }
+        
+        /**
+         * Escapa HTML para exibição segura.
+         * @param {string} str
+         */
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+
+        // --- Event Listeners ---
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // Botão "Hoje"
+        todayBtn.addEventListener('click', () => {
+            currentDate = new Date();
+            renderCalendar();
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+
+        fullDayCheckbox.addEventListener('change', toggleTimeFields);
+
+        absenceForm.addEventListener('submit', handleFormSubmit);
+        
+        eventForm.addEventListener('submit', handleEventFormSubmit);
+        
+        // (NOVOS) Listeners das Abas
+        tabAusenciasBtn.addEventListener('click', () => showTab('ausencias'));
+        tabEventosBtn.addEventListener('click', () => showTab('eventos'));
+
+        // Fecha o modal ao clicar fora da área de conteúdo
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            // A renderização inicial do calendário é chamada pelo 'setupAbsenceListener'
+        });
+
+    </script>
+</body>
+</html>
