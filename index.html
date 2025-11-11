@@ -110,19 +110,7 @@
             border-color: #2563eb; /* border-blue-600 */
         }
         
-        /* (NOVO) Estilo para o Overlay de Erro Fatal */
-        #fatalErrorOverlay {
-            display: none; /* Oculto por padrão */
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.85); /* Fundo mais escuro */
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            color: #1f2937; /* text-gray-800 */
-        }
+        /* (REMOVIDO) Estilo para o Overlay de Erro Fatal */
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -189,45 +177,8 @@
         </div>
     </div>
 
-    <!-- (NOVO) Overlay de Erro Fatal (para Permissões) -->
-    <div id="fatalErrorOverlay">
-        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-2xl w-full">
-            <div class="flex items-center gap-3">
-                <svg class="w-12 h-12 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <h2 class="text-2xl font-bold text-red-700">Erro de Permissão do Banco de Dados</h2>
-            </div>
-            <p class="mt-4 text-base text-gray-700">
-                O aplicativo foi bloqueado pelo Firebase. Isso acontece porque as <strong>Regras de Segurança</strong> do seu banco de dados (Cloud Firestore) não estão permitindo que o aplicativo leia os dados.
-            </p>
-            <p class="mt-3 text-base text-gray-700">
-                <strong>Para corrigir, siga estes 3 passos:</strong>
-            </p>
-            <ol class="list-decimal list-inside mt-3 space-y-2 text-gray-600">
-                <li>Abra o seu projeto (<code>calendariodeausencias</code>) no <a href="https://console.firebase.google.com/" class="text-blue-600 font-medium underline" target="_blank" rel="noopener noreferrer">Console do Firebase</a>.</li>
-                <li>Vá para <strong>Cloud Firestore</strong> (no menu "Build") &rarr; clique na aba <strong>"Regras"</strong>.</li>
-                <li>Apague todo o texto que está lá e cole <strong>exatamente</strong> o código abaixo:</li>
-            </ol>
-            <pre class="w-full bg-gray-800 text-white p-3 rounded-md text-sm mt-3 overflow-x-auto">
-<code class="font-mono">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Permite leitura e escrita nas coleções
-    match /absences/{docId} {
-      allow read, write: if true;
-    }
-    match /events/{docId} {
-      allow read, write: if true;
-    }
-  }
-}</code></pre>
-            <p class="mt-4 text-gray-700">
-                4. Clique em <strong>"Publicar"</strong> (Publish) e depois <strong>atualize esta página</strong>.
-            </p>
-        </div>
-    </div>
+    <!-- (REMOVIDO) Overlay de Erro Fatal -->
 
-    <!-- (CORREÇÃO) O MODAL DE AUSÊNCIA ESTAVA FALTANDO E/OU MAL FORMADO -->
     <!-- Modal para Adicionar/Ver Ausência -->
     <div id="absenceModal" class="fixed inset-0 z-50 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -252,7 +203,7 @@ service cloud.firestore {
             <!-- Conteúdo do Modal (com rolagem) -->
             <div class="p-6 overflow-y-auto space-y-6">
                 
-                <!-- (NOVO) Painel da Aba Ausências -->
+                <!-- Painel da Aba Ausências -->
                 <div id="tabAusenciasContent" class="tab-panel">
                     <!-- Seção para Adicionar Nova Ausência -->
                     <div class="mb-6 pb-6 border-b border-gray-200">
@@ -268,7 +219,6 @@ service cloud.firestore {
                                 <input type="text" id="collaboratorName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
                             </div>
 
-                            <!-- (INÍCIO DO FRAGMENTO QUE ESTAVA NO LUGAR ERRADO) -->
                             <!-- Tipo de Ausência -->
                             <div>
                                 <label for="absenceType" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
@@ -325,7 +275,7 @@ service cloud.firestore {
                     </div>
                 </div>
 
-                <!-- (NOVO) Painel da Aba Eventos -->
+                <!-- Painel da Aba Eventos -->
                 <div id="tabEventosContent" class="tab-panel hidden">
                     <!-- Seção para Adicionar Evento/Feriado -->
                     <div class="mb-6 pb-6 border-b border-gray-200">
@@ -359,7 +309,6 @@ service cloud.firestore {
             </div>
         </div>
     </div>
-    <!-- (FIM DA CORREÇÃO) -->
 
 
     <!-- Firebase e Módulos JS -->
@@ -440,8 +389,8 @@ service cloud.firestore {
         const tabEventosBtn = document.getElementById('tabEventosBtn');
         const tabAusenciasContent = document.getElementById('tabAusenciasContent');
         const tabEventosContent = document.getElementById('tabEventosContent');
-        // (NOVO) Elemento de Overlay de Erro
-        const fatalErrorOverlay = document.getElementById('fatalErrorOverlay');
+        // (REMOVIDO) Elemento de Overlay de Erro
+        // const fatalErrorOverlay = document.getElementById('fatalErrorOverlay');
 
         // --- Funções de Inicialização ---
 
@@ -537,10 +486,15 @@ service cloud.firestore {
                 renderCalendar(); // Redesenha o calendário com os novos dados
             }, (error) => {
                 console.error("Erro ao escutar ausências:", error);
-                // (MUDANÇA) Mostrar erro de permissão em TELA CHEIA
+                // (REMOVIDO) Chamada para o overlay de erro
                 if (error.code === 'permission-denied' || error.code === 'PERMISSION_DENIED') {
-                     // document.querySelector('.container').prepend(createErrorBanner(...));
-                     showFatalErrorOverlay(); // (NOVO) Chama o overlay
+                     // showFatalErrorOverlay();
+                     console.error("--- ERRO DE PERMISSÃO (Ausências) ---");
+                     // Adiciona um banner de erro mais simples
+                     document.querySelector('.container').prepend(createErrorBanner(
+                        'Erro de Permissão (Ausências)',
+                        'Não foi possível ler os dados. Verifique suas "Regras" no Cloud Firestore. Elas precisam permitir a leitura (read) da coleção "absences".'
+                    ));
                 }
             });
         }
@@ -559,10 +513,15 @@ service cloud.firestore {
                 renderCalendar(); // Redesenha o calendário com os novos dados
             }, (error) => {
                 console.error("Erro ao escutar eventos:", error);
-                // (MUDANÇA) Mostrar erro de permissão em TELA CHEIA
+                // (REMOVIDO) Chamada para o overlay de erro
                 if (error.code === 'permission-denied' || error.code === 'PERMISSION_DENIED') {
-                     // document.querySelector('.container').prepend(createErrorBanner(...));
-                     showFatalErrorOverlay(); // (NOVO) Chama o overlay
+                     // showFatalErrorOverlay();
+                     console.error("--- ERRO DE PERMISSÃO (Eventos) ---");
+                     // Adiciona um banner de erro mais simples
+                     document.querySelector('.container').prepend(createErrorBanner(
+                        'Erro de Permissão (Eventos)',
+                        'Não foi possível ler os dados. Verifique suas "Regras" no Cloud Firestore. Elas precisam permitir a leitura (read) da coleção "events".'
+                    ));
                 }
             });
         }
@@ -1029,15 +988,18 @@ service cloud.firestore {
         // --- Funções Utilitárias ---
 
         /**
-         * (NOVA FUNÇÃO) Mostra o overlay de erro fatal (de permissão).
-         * Isso para a execução do app até que o usuário corrija as regras.
+         * (REMOVIDA) Função showFatalErrorOverlay
          */
-        function showFatalErrorOverlay() {
-            fatalErrorOverlay.style.display = 'flex';
-        }
 
         /**
-         * (Antiga) Cria um banner de erro para ser inserido no topo da página.
+         * Cria um banner de erro para ser inserido no topo da página.
+         * @param {string} title - O título do erro
+         * @param {string} message - A mensagem de erro
+         */
+        function createErrorBanner(title, message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-800';
+            errorDiv.innerHTML = `
                 <p class="font-bold">${escapeHTML(title)}</p>
                 <p>${escapeHTML(message)}</p>
             `;
