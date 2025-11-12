@@ -110,7 +110,47 @@
             border-color: #2563eb; /* border-blue-600 */
         }
         
-        /* (REMOVIDO) Estilo para o Overlay de Erro Fatal */
+        /* (NOVO) Estilo para a Notificação Toast */
+        #notificationToast {
+            position: fixed;
+            bottom: 1.5rem; /* 24px */
+            right: 1.5rem; /* 24px */
+            z-index: 100;
+            background-color: #2563eb; /* bg-blue-600 */
+            color: white;
+            padding: 1rem 1.5rem; /* 16px 24px */
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* 12px */
+            
+            /* Animação */
+            transform: translateX(120%);
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
+        }
+        #notificationToast.show {
+            transform: translateX(0);
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Estilo para toast de evento */
+        #notificationToast.event {
+             background-color: #7c3aed; /* bg-purple-600 */
+        }
+
+        #notificationCloseBtn {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            padding: 0.25rem; /* 4px */
+            line-height: 1;
+        }
+         #notificationCloseBtn:hover {
+            background: rgba(255, 255, 255, 0.2);
+         }
+
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -311,8 +351,18 @@
     </div>
 
 
+    <!-- (NOVO) Elemento de Notificação Toast -->
+    <div id="notificationToast">
+        <svg id="notificationIcon" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <span id="notificationMessage" class="font-medium">Nova ausência adicionada!</span>
+        <button id="notificationCloseBtn" title="Fechar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+
+
     <!-- Firebase e Módulos JS -->
-    <script type="module">
+        <script type="module">
         // Importações do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; // Adicionado
@@ -360,6 +410,12 @@
         let absencesCollectionRef;
         let allEvents = []; // Cache local de todos os eventos
         let eventsCollectionRef; // Referência para coleção de eventos
+        // (NOVAS) Variáveis para Notificação
+        let notificationTimer;
+        let isInitialAbsenceLoad = true;
+        let isInitialEventLoad = true;
+        let hasNotificationPermission = false; // (NOVO) Flag de permissão
+
 
         // --- Elementos do DOM ---
         const calendarGrid = document.getElementById('calendarGrid');
@@ -389,8 +445,11 @@
         const tabEventosBtn = document.getElementById('tabEventosBtn');
         const tabAusenciasContent = document.getElementById('tabAusenciasContent');
         const tabEventosContent = document.getElementById('tabEventosContent');
-        // (REMOVIDO) Elemento de Overlay de Erro
-        // const fatalErrorOverlay = document.getElementById('fatalErrorOverlay');
+        // (NOVOS) Elementos da Notificação
+        const notificationToast = document.getElementById('notificationToast');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationCloseBtn = document.getElementById('notificationCloseBtn');
 
         // --- Funções de Inicialização ---
 
@@ -440,6 +499,9 @@
                 console.error("Erro ao inicializar o Firebase:", error);
                 document.body.innerHTML = "<p>Erro ao conectar ao banco de dados. Verifique o console.</p>";
             }
+            
+            // (NOVO) Solicita permissão para notificações do navegador
+            await requestNotificationPermission();
         }
 
         /**
@@ -481,9 +543,32 @@
             const q = query(absencesCollectionRef);
             
             onSnapshot(q, (snapshot) => {
+                
+                // (MUDANÇA) Processa notificações ANTES de carregar os dados
+                if (!isInitialAbsenceLoad) {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const data = change.doc.data();
+                            const message = `Nova Ausência: ${escapeHTML(data.collaboratorName)}`;
+                            // Não notifica o usuário sobre suas próprias adições
+                            if (data.createdBy !== userId) { 
+                                showNotification(message, 'absence'); // Mostra o toast
+                                showBrowserNotification(message); // (NOVO) Tenta mostrar notificação do browser
+                            }
+                        }
+                    });
+                } else {
+                    console.log("Carregamento inicial de ausências, notificações suprimidas.");
+                }
+
+                // Carrega os dados (como antes)
                 allAbsences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("Ausências carregadas:", allAbsences.length);
                 renderCalendar(); // Redesenha o calendário com os novos dados
+                
+                // (NOVO) Define a flag após o primeiro carregamento
+                isInitialAbsenceLoad = false;
+
             }, (error) => {
                 console.error("Erro ao escutar ausências:", error);
                 // (REMOVIDO) Chamada para o overlay de erro
@@ -508,9 +593,32 @@
             const q = query(eventsCollectionRef);
             
             onSnapshot(q, (snapshot) => {
+
+                // (MUDANÇA) Processa notificações ANTES de carregar os dados
+                if (!isInitialEventLoad) {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const data = change.doc.data();
+                            const message = `Novo Evento: ${escapeHTML(data.eventName)}`;
+                            // Não notifica o usuário sobre suas próprias adições
+                            if (data.createdBy !== userId) { 
+                                showNotification(message, 'event'); // Mostra o toast
+                                showBrowserNotification(message); // (NOVO) Tenta mostrar notificação do browser
+                            }
+                        }
+                    });
+                } else {
+                    console.log("Carregamento inicial de eventos, notificações suprimidas.");
+                }
+
+                // Carrega os dados (como antes)
                 allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("Eventos carregados:", allEvents.length);
                 renderCalendar(); // Redesenha o calendário com os novos dados
+                
+                // (NOVO) Define a flag após o primeiro carregamento
+                isInitialEventLoad = false;
+
             }, (error) => {
                 console.error("Erro ao escutar eventos:", error);
                 // (REMOVIDO) Chamada para o overlay de erro
@@ -921,7 +1029,7 @@
          * Deleta uma ausência do Firestore.
          */
         async function handleDeleteAbsence(e) {
-            // Usamos .currentTarget para pegar o botão, mesmo se clicarmos no ícone SVG
+            // A LINHA "function handleDeleteEvent(e)" FOI REMOVIDA DESTE LOCAL
             const button = e.currentTarget;
             const docId = button.dataset.id;
             
@@ -988,8 +1096,96 @@
         // --- Funções Utilitárias ---
 
         /**
-         * (REMOVIDA) Função showFatalErrorOverlay
+         * (NOVA FUNÇÃO) Solicita permissão para Notificações do Navegador (Web Notifications API)
          */
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("Este navegador não suporta notificações de desktop.");
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    console.log("Permissão para notificações concedida.");
+                    hasNotificationPermission = true;
+                    // (Opcional) Mostrar uma notificação de teste
+                    // showBrowserNotification("As notificações estão ativadas!", "Teste");
+                } else {
+                    console.log("Permissão para notificações negada.");
+                    hasNotificationPermission = false;
+                }
+            } catch (error) {
+                console.error("Erro ao solicitar permissão de notificação:", error);
+            }
+        }
+
+        /**
+         * (NOVA FUNÇÃO) Mostra uma notificação do navegador (se a permissão foi dada).
+         * @param {string} title O título da notificação
+         * @param {string} body O corpo (opcional)
+         */
+        function showBrowserNotification(title, body = "") {
+            // Só mostra se a permissão foi dada E se a aba não estiver em foco
+            if (hasNotificationPermission && !document.hasFocus()) {
+                const notification = new Notification(title, {
+                    body: body || "O calendário de ausências foi atualizado.",
+                    icon: "https://placehold.co/72x72/2563eb/white?text=CAL" // Ícone placeholder
+                });
+                
+                // Fecha a notificação automaticamente após 5 segundos
+                setTimeout(notification.close.bind(notification), 5000);
+            } else {
+                if (!hasNotificationPermission) {
+                    console.log("Tentativa de notificação do browser falhou: permissão negada.");
+                }
+                if (document.hasFocus()) {
+                    console.log("Tentativa de notificação do browser suprimida: aba em foco.");
+                }
+            }
+        }
+
+        /**
+         * (FUNÇÃO EXISTENTE) Mostra a notificação toast (na página).
+         * @param {string} message A mensagem a ser exibida.
+         * @param {'absence' | 'event'} type O tipo de notificação (para estilização).
+         */
+        function showNotification(message, type = 'absence') {
+            // Limpa o timer anterior se houver um
+            if (notificationTimer) {
+                clearTimeout(notificationTimer);
+            }
+
+            notificationMessage.textContent = message;
+
+            // Muda o estilo/ícone baseado no tipo
+            if (type === 'event') {
+                notificationToast.classList.add('event'); // Adiciona classe roxa
+                notificationIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`; // Ícone de calendário
+            } else {
+                notificationToast.classList.remove('event'); // Remove classe roxa
+                notificationIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`; // Ícone de gráfico
+            }
+            
+            // Mostra o toast
+            notificationToast.classList.add('show');
+
+            // Define um timer para esconder o toast após 5 segundos
+            notificationTimer = setTimeout(() => {
+                hideNotification();
+            }, 5000);
+        }
+
+        /**
+         * (NOVA FUNÇÃO) Esconde a notificação toast.
+         */
+        function hideNotification() {
+            if (notificationTimer) {
+                clearTimeout(notificationTimer);
+                notificationTimer = null;
+            }
+            notificationToast.classList.remove('show');
+        }
 
         /**
          * Cria um banner de erro para ser inserido no topo da página.
@@ -1130,6 +1326,9 @@
             }
         });
 
+        // (NOVO) Listener para o botão de fechar a notificação
+        notificationCloseBtn.addEventListener('click', hideNotification);
+
         // --- Inicialização ---
         document.addEventListener('DOMContentLoaded', () => {
             initializeFirebase();
@@ -1139,4 +1338,5 @@
     </script>
 </body>
 </html>
+
 
