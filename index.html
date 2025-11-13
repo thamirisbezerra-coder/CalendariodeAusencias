@@ -4,344 +4,206 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendário de Ausências</title>
-    <!-- Carrega o Tailwind CSS -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Carrega a biblioteca de ícones Lucide -->
-    <script type="module" src="https://unpkg.com/lucide-react@latest/dist/lucide-react.js"></script>
-    <script src="https://unpkg.com/lucide-icons@latest/dist/lucide.min.js"></script>
+    <!-- Chart.js (para gráficos) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Fonte Inter (como no Google Calendar) */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
         body {
-            font-family: "Inter", sans-serif;
-            background-color: #f8f9fa; /* Um cinza muito claro */
+            font-family: 'Inter', sans-serif;
         }
-
-        /* Estilo para os dias do calendário */
-        .calendar-day {
-            min-height: 120px; /* Um pouco mais de altura */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            transition: background-color 0.15s ease-in-out;
-            border-bottom: 1px solid #e0e0e0; /* Linha sutil separando as semanas */
-            border-left: 1px solid #e0e0e0;
+        /* Estilos para o "toast" de notificação */
+        #notification-toast {
+            transition: opacity 0.5s, transform 0.5s;
         }
-        
-        /* Remove borda da primeira coluna */
-        .calendar-day:nth-child(7n+1) {
-            border-left: none;
-        }
-
-        /* Estilo para dias fora do mês corrente */
-        .other-month {
-            opacity: 0.5;
-            background-color: #fdfdfd;
-        }
-        .other-month:hover {
-            background-color: #fdfdfd !important;
-            cursor: default !important;
-        }
-
-        /* Marcador de ausência (usado NO MODAL) */
-        .absence-marker {
+        /* Estilos para o scrollbar */
+        .modal-body::-webkit-scrollbar {
             width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 4px;
         }
-        .marker-medical { background-color: #ef4444; } /* Vermelho */
-        .marker-time_bank { background-color: #3b82f6; } /* Azul */
-        .marker-personal { background-color: #f97316; } /* Laranja */
-
-        /* PÍLULAS (usadas NO CALENDÁRIO) */
-        .absence-pill {
-            padding: 2px 8px; /* Mais padding horizontal */
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f5f9; /* gray-100 */
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* gray-400 */
             border-radius: 4px;
-            font-size: 0.75rem; /* 12px */
-            line-height: 1rem; /* 16px */
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            border: 1px solid transparent; /* Borda sutil */
         }
-        .pill-medical { 
-            background-color: #fee2e2; /* Vermelho claro */
-            color: #b91c1c; /* Vermelho escuro */
-            border-color: #fecaca;
-        } 
-        .pill-time_bank { 
-            background-color: #dbeafe; /* Azul claro */
-            color: #1d4ed8; /* Azul escuro */
-            border-color: #bfdbfe;
-        } 
-        .pill-personal { 
-            background-color: #ffedd5; /* Laranja claro */
-            color: #c2410c; /* Laranja escuro */
-            border-color: #fed7aa;
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* gray-500 */
         }
-        /* NOVA PÍLULA (para Eventos/Feriados) */
-        .pill-event { 
-            background-color: #ede9fe; /* Roxo claro */
-            color: #5b21b6; /* Roxo escuro */
-            border-color: #d8b4fe;
-        }
-        
-        /* Ocultar modal por padrão */
-        #absenceModal {
+        /* Oculta setas em campos input[type=time] */
+        input[type="time"]::-webkit-calendar-picker-indicator {
             display: none;
         }
-
-        /* (NOVO) Estilos das Abas do Modal */
-        .tab-button {
-            padding: 12px 16px;
-            font-weight: 500;
-            color: #6b7280; /* text-gray-500 */
-            border-bottom: 3px solid transparent;
-            transition: color 0.15s ease, border-color 0.15s ease;
-        }
-        .tab-button:hover {
-            color: #111827; /* text-gray-900 */
-        }
-        .tab-button.active {
-            color: #2563eb; /* text-blue-600 */
-            border-color: #2563eb; /* border-blue-600 */
-        }
-        
-        /* (NOVO) Estilo para a Notificação Toast */
-        #notificationToast {
-            position: fixed;
-            bottom: 1.5rem; /* 24px */
-            right: 1.5rem; /* 24px */
-            z-index: 100;
-            background-color: #2563eb; /* bg-blue-600 */
-            color: white;
-            padding: 1rem 1.5rem; /* 16px 24px */
-            border-radius: 0.5rem; /* 8px */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem; /* 12px */
-            
-            /* Animação */
-            transform: translateX(120%);
-            opacity: 0;
-            visibility: hidden;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
-        }
-        #notificationToast.show {
-            transform: translateX(0);
-            opacity: 1;
-            visibility: visible;
-        }
-        /* Estilo para toast de evento */
-        #notificationToast.event {
-             background-color: #7c3aed; /* bg-purple-600 */
-        }
-
-        #notificationCloseBtn {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 9999px;
-            padding: 0.25rem; /* 4px */
-            line-height: 1;
-        }
-         #notificationCloseBtn:hover {
-            background: rgba(255, 255, 255, 0.2);
-         }
-
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 p-4 lg:p-8 flex items-center justify-center min-h-screen">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-full lg:max-w-7xl">
+    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-gray-800">Calendário de Ausências do Setor</h1>
+            <p class="mt-1 text-sm text-gray-500">Selecione um dia para adicionar ou visualizar ausências e eventos.</p>
+        </div>
+
+        <!-- Orientações de Uso -->
+        <div class="p-6 bg-blue-50 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-blue-800">Orientações de Uso</h2>
+            <ul class="list-disc list-inside mt-2 text-sm text-blue-700 space-y-1">
+                <li>Sempre que for se ausentar (médico, banco de horas, etc.), clique no dia e adicione sua ausência.</li>
+                <li>Preencha seu nome e o motivo para que todos saibam quem estará fora.</li>
+                <li>Use a aba "Eventos/Feriados" para marcar datas importantes para toda a equipe.</li>
+            </ul>
+        </div>
+
+        <!-- Calendário -->
+        <div class="p-6">
+            <!-- Cabeçalho do Calendário (Navegação) -->
+            <div class="flex items-center justify-between mb-4">
+                <button id="prev-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Mês anterior">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h2 id="month-year" class="text-xl font-semibold text-gray-700"></h2>
+                <button id="next-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo mês">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+
+            <!-- Dias da Semana (Header) -->
+            <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                <div>DOM</div>
+                <div>SEG</div>
+                <div>TER</div>
+                <div>QUA</div>
+                <div>QUI</div>
+                <div>SEX</div>
+                <div>SÁB</div>
+            </div>
+
+            <!-- Grade de Dias -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                <!-- Dias serão preenchidos pelo JavaScript -->
+            </div>
+        </div>
         
-        <!-- Cabeçalho -->
-        <header class="mb-6 flex flex-col md:flex-row justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Calendário de Ausências</h1>
-                <p class="text-base text-gray-600 mt-1">Gerencie as ausências do seu setor.</p>
-            </div>
-            <div class="text-sm text-gray-600 mt-4 md:mt-0 md:text-right">
-                ID do Calendário (para compartilhar):<br>
-                <span id="userIdDisplay" class="font-mono bg-gray-200 px-2 py-1 rounded-md text-gray-800">carregando...</span>
-            </div>
-        </header>
-
-        <!-- Bloco de Orientações de Uso -->
-        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
-            <svg class="w-6 h-6 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-            <div>
-                <h4 class="text-base font-semibold text-blue-800">Orientações de Uso</h4>
-                <p class="text-sm text-blue-700 mt-1">
-                    Sempre que for se ausentar (médico, banco de horas, etc.), por favor, anote no calendário clicando no dia correspondente. Isso é essencial para sabermos quem estará presente no setor.
-                </p>
-            </div>
-        </div>
-
-        <!-- Container do Calendário -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-            
-            <!-- Navegação do Calendário -->
-            <div class="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-                <div class="flex items-center gap-2">
-                    <button id="prevMonthBtn" class="p-2 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <button id="nextMonthBtn" class="p-2 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
-                    <h2 id="monthYearHeader" class="text-xl font-semibold text-gray-800 ml-2"></h2>
-                </div>
-                <button id="todayBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                    Hoje
-                </button>
-            </div>
-
-            <!-- Dias da Semana -->
-            <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Dom</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Seg</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ter</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qua</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qui</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sex</div>
-                <div class="text-center py-3 px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sáb</div>
-            </div>
-
-            <!-- Grid dos Dias -->
-            <div id="calendarGrid" class="grid grid-cols-7 bg-gray-100">
-                <!-- Dias serão gerados pelo JavaScript -->
-            </div>
+        <!-- Acesso Restrito -->
+        <div class="p-4 bg-gray-50 border-t border-gray-200 text-center">
+            <a href="#" id="admin-access-button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors">Acesso Restrito</a>
         </div>
     </div>
 
-    <!-- (REMOVIDO) Overlay de Erro Fatal -->
-
-    <!-- Modal para Adicionar/Ver Ausência -->
-    <div id="absenceModal" class="fixed inset-0 z-50 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-            
+    <!-- Modal de Ausência/Evento (Oculto por padrão) -->
+    <div id="absenceModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-40">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0">
             <!-- Cabeçalho do Modal -->
-            <div class="flex justify-between items-center p-5 border-b border-gray-200">
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-900">Gerenciar Dia</h3>
-                    <p id="modalDateHeader" class="text-base text-gray-600">11 de Novembro, 2025</p>
+            <div class="p-5 bg-gray-50 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800" id="modal-title">Adicionar em 20 de Nov</h3>
+                    <button id="close-modal" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar modal">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
                 </div>
-                <button id="closeModalBtn" class="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
             </div>
 
-            <!-- Abas -->
-            <div class="flex border-b border-gray-200">
-                <button id="tabAusenciasBtn" class="tab-button active">Ausências</button>
-                <button id="tabEventosBtn" class="tab-button">Eventos/Feriados</button>
+            <!-- Abas (Tabs) -->
+            <div class="border-b border-gray-200 px-5 pt-4">
+                <nav class="flex -mb-px space-x-6">
+                    <button id="tab-absences" class="tab-button whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm text-blue-600 border-blue-600" aria-current="page">
+                        Ausências
+                    </button>
+                    <button id="tab-events" class="tab-button whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
+                        Eventos / Feriados
+                    </button>
+                </nav>
             </div>
 
-            <!-- Conteúdo do Modal (com rolagem) -->
-            <div class="p-6 overflow-y-auto space-y-6">
+            <!-- Corpo do Modal (com scroll) -->
+            <div class="p-5 modal-body" style="max-height: 60vh; overflow-y: auto;">
                 
-                <!-- Painel da Aba Ausências -->
-                <div id="tabAusenciasContent" class="tab-panel">
-                    <!-- Seção para Adicionar Nova Ausência -->
-                    <div class="mb-6 pb-6 border-b border-gray-200">
-                        <h4 class="text-lg font-medium text-gray-800 mb-4">Adicionar Nova Ausência</h4>
-                        <!-- Formulário -->
-                        <form id="absenceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Input oculto para a data -->
-                            <input type="hidden" id="absenceDate">
-                            
-                            <!-- Nome do Colaborador -->
-                            <div class="md:col-span-2">
-                                <label for="collaboratorName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Colaborador</label>
-                                <input type="text" id="collaboratorName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                <!-- Conteúdo da Aba: Ausências -->
+                <div id="content-absences" class="tab-content space-y-6">
+                    <!-- Formulário de Nova Ausência -->
+                    <div class="space-y-4">
+                        <h4 class="text-md font-semibold text-gray-700">Adicionar Nova Ausência</h4>
+                        <div>
+                            <label for="colaborador" class="block text-sm font-medium text-gray-700 mb-1">Nome do Colaborador</label>
+                            <input type="text" id="colaborador" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Seu nome">
+                        </div>
+                        <div>
+                            <label for="tipo-ausencia" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ausência</label>
+                            <select id="tipo-ausencia" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="medical">Atestado Médico</option>
+                                <option value="time_bank">Banco de Horas</option>
+                                <option value="personal">Motivo Pessoal</option>
+                            </select>
+                        </div>
+                        
+                        <div class="relative flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="dia-todo" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                             </div>
+                            <div class="ml-3 text-sm">
+                                <label for="dia-todo" class="font-medium text-gray-700">Dia todo</label>
+                            </div>
+                        </div>
 
-                            <!-- Tipo de Ausência -->
+                        <div id="time-fields" class="grid grid-cols-2 gap-4">
                             <div>
-                                <label for="absenceType" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                                <select id="absenceType" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="medical">Atestado Médico</option>
-                                    <option value="time_bank">Banco de Horas</option>
-                                    <option value="personal">Motivo Pessoal</option>
-                                </select>
+                                <label for="hora-inicio" class="block text-sm font-medium text-gray-700 mb-1">Hora Início</label>
+                                <input type="time" id="hora-inicio" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             </div>
+                            <div>
+                                <label for="hora-fim" class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
+                                <input type="time" id="hora-fim" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
 
-                            <!-- Dia Todo -->
-                            <div class="flex items-end pb-2">
-                                <div class="flex items-center h-full">
-                                    <input id="fullDay" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                    <label for="fullDay" class="ml-2 block text-sm font-medium text-gray-700">Dia todo</label>
-                                </div>
-                            </div>
-
-                            <!-- Horários (ocultos se 'Dia Todo' estiver marcado) -->
-                            <div id="timeFields" class="grid grid-cols-2 gap-4 md:col-span-2">
-                                <div>
-                                    <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Hora Início</label>
-                                    <input type="time" id="startTime" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <div>
-                                    <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
-                                    <input type="time" id="endTime" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                            </div>
-
-                            <!-- Observações -->
-                            <div class="md:col-span-2">
-                                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Observações (opcional)</label>
-                                <textarea id="notes" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
-                            </div>
-
-                            <!-- Botão de Salvar -->
-                            <div class="md:col-span-2 text-right">
-                                <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                    Salvar Ausência
-                                </button>
-                            </div>
-                        </form>
-                        <div id="formError" class="text-red-600 text-sm mt-2 hidden"></div>
+                        <!-- (NOVO) Campo de Observação -->
+                        <div>
+                            <label for="observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação (Opcional)</label>
+                            <textarea id="observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: Atestado de comparecimento, consulta..."></textarea>
+                        </div>
+                        
+                        <button id="save-absence" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-semibold shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            Salvar Ausência
+                        </button>
                     </div>
 
-                    <!-- Seção para Listar Ausências do Dia -->
+                    <!-- Divisor -->
+                    <div class="border-t border-gray-200"></div>
+
+                    <!-- Lista de Ausências do Dia -->
                     <div>
-                        <h4 class="text-lg font-medium text-gray-800 mb-4">Ausências Registradas</h4>
-                        <div id="absencesList" class="space-y-3">
-                            <!-- Lista de ausências será preenchida pelo JS -->
-                            <p id="noAbsencesMsg" class="text-gray-500">Nenhuma ausência registrada para este dia.</p>
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">Ausências Registradas</h4>
+                        <div id="absences-list" class="space-y-3">
+                            <!-- Lista preenchida pelo JS -->
+                            <p class="text-sm text-gray-500">Nenhuma ausência registrada para este dia.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Painel da Aba Eventos -->
-                <div id="tabEventosContent" class="tab-panel hidden">
-                    <!-- Seção para Adicionar Evento/Feriado -->
-                    <div class="mb-6 pb-6 border-b border-gray-200">
-                        <h4 class="text-lg font-medium text-gray-800 mb-4">Adicionar Evento ou Feriado</h4>
-                        <form id="eventForm" class="grid grid-cols-1 gap-4">
-                            <!-- Nome do Evento -->
-                            <div>
-                                <label for="eventName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Evento/Feriado</label>
-                                <input type="text" id="eventName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500" required>
-                            </div>
-
-                            <!-- Botão de Salvar -->
-                            <div class="text-right">
-                                <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                                    Salvar Evento
-                                </button>
-                            </div>
-                        </form>
-                        <div id="eventFormError" class="text-red-600 text-sm mt-2 hidden"></div>
+                <!-- Conteúdo da Aba: Eventos/Feriados (Oculto) -->
+                <div id="content-events" class="tab-content space-y-6 hidden">
+                    <!-- Formulário de Novo Evento -->
+                    <div class="space-y-4">
+                        <h4 class="text-md font-semibold text-gray-700">Adicionar Novo Evento/Feriado</h4>
+                        <div>
+                            <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Nome do Evento</label>
+                            <input type="text" id="event-name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: Feriado Municipal, Reunião Geral">
+                        </div>
+                        <button id="save-event" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md font-semibold shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                            Salvar Evento
+                        </button>
                     </div>
 
-                    <!-- Seção para Listar Eventos do Dia -->
+                    <!-- Divisor -->
+                    <div class="border-t border-gray-200"></div>
+
+                    <!-- Lista de Eventos do Dia -->
                     <div>
-                        <h4 class="text-lg font-medium text-gray-800 mb-4">Eventos/Feriados Registrados</h4>
-                        <div id="eventsList" class="space-y-3">
-                            <p id="noEventsMsg" class="text-gray-500">Nenhum evento registrado para este dia.</p>
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">Eventos Registrados</h4>
+                        <div id="events-list" class="space-y-3">
+                            <!-- Lista preenchida pelo JS -->
+                            <p class="text-sm text-gray-500">Nenhum evento registrado para este dia.</p>
                         </div>
                     </div>
                 </div>
@@ -350,43 +212,150 @@
         </div>
     </div>
 
+    <!-- Modal de Senha (Admin) -->
+    <div id="passwordModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 class="text-lg font-semibold text-gray-800">Acesso Restrito</h3>
+            <div>
+                <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input type="password" id="admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <p id="password-error" class="text-xs text-red-600 mt-1 hidden">Senha incorreta.</p>
+            </div>
+            <div class="flex items-center justify-end space-x-3">
+                <button id="cancel-password" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none">
+                    Cancelar
+                </button>
+                <button id="submit-password" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none">
+                    Entrar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Relatório (Admin) -->
+    <div id="reportModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all scale-95 opacity-0">
+            <!-- Cabeçalho -->
+            <div class="p-5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">Relatório de Ausências</h3>
+                <button id="close-report" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar relatório">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
 
-    <!-- (NOVO) Elemento de Notificação Toast -->
-    <div id="notificationToast">
-        <svg id="notificationIcon" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        <span id="notificationMessage" class="font-medium">Nova ausência adicionada!</span>
-        <button id="notificationCloseBtn" title="Fechar">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+            <!-- Corpo -->
+            <div class="p-6 modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Gráfico Anual -->
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="pie-chart-title">Ausências por Tipo (Ano)</h4>
+                        <div class="w-full h-64 flex items-center justify-center bg-gray-50 rounded-lg p-4">
+                            <canvas id="monthPieChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista Mensal -->
+                    <div>
+                        <!-- Navegação de Mês do Relatório -->
+                        <div class="flex items-center justify-between mb-2">
+                            <button id="report-prev-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Mês anterior">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <h4 class="text-md font-semibold text-gray-700" id="medical-report-title">Atestados Médicos (Mês)</h4>
+                            <button id="report-next-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo mês">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
+                        <div id="medical-report-list" class="space-y-2 text-sm p-4 bg-gray-50 rounded-lg h-64 overflow-y-auto">
+                            <!-- Lista preenchida pelo JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 
-    <!-- Firebase e Módulos JS -->
+    <!-- Notificação "Toast" (Oculta) -->
+    <div id="notification-toast" class="fixed bottom-5 right-5 w-full max-w-sm bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden z-50 transform translate-x-full opacity-0">
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-medium text-gray-900" id="notification-title">Nova Atividade!</p>
+                    <p class="mt-1 text-sm text-gray-500" id="notification-message">Um novo item foi adicionado ao calendário.</p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button id="notification-close" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <span class="sr-only">Fechar</span>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Banner de Erro Fatal (Oculto) -->
+    <div id="fatalErrorOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-[9998] hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 text-center">
+            <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro Crítico</h2>
+            <p class="text-gray-600" id="fatalErrorMessage">Ocorreu um erro inesperado e a aplicação não pode continuar.</p>
+        </div>
+    </div>
+
+
+    <!-- Variáveis Globais -->
+    <script>
+        var db;
+        var auth;
+        var userId;
+        var currentDate = new Date();
+        var selectedDateISO; 
+        var allAbsences = []; 
+        var allEvents = []; 
+        var absencesCollectionRef; 
+        var eventsCollectionRef; 
+        var notificationTimer;
+        var isInitialAbsenceLoad = true; 
+        var isInitialEventLoad = true;
+        var hasNotificationPermission = false; 
+        var myPieChart = null;
+        const ADMIN_PASSWORD = "paula2025"; 
+        var reportDate = new Date(); 
+    </script>
+    
+    <div id="app-script">
         <script type="module">
         // Importações do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; // Adicionado
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { 
             getAuth, 
             signInAnonymously, 
-            onAuthStateChanged,
-            signInWithCustomToken
+            onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
+            query, 
+            where, 
+            onSnapshot, 
             addDoc, 
-            onSnapshot,
-            query,
+            deleteDoc, 
             doc,
-            deleteDoc,
-            serverTimestamp
+            setDoc,
+            Timestamp
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Variáveis Globais de Configuração ---
-        
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        // --- Configuração do Firebase ---
         const firebaseConfig = {
           apiKey: "AIzaSyCe8E7k7vsCRZM9wybNqj7M7UXLpuYcis8",
           authDomain: "calendariodeausencias.firebaseapp.com",
@@ -397,667 +366,627 @@
           measurementId: "G-DGWE7SVBYX"
         };
         
-        // Não precisamos mais das variáveis do ambiente
-        const appId = null; 
-        const initialAuthToken = null;
-
-        // --- Variáveis de Estado da Aplicação ---
-        let db;
-        let auth;
-        let userId;
-        let currentDate = new Date(); // Data atual para visualização do calendário
-        let allAbsences = []; // Cache local de todas as ausências
-        let absencesCollectionRef;
-        let allEvents = []; // Cache local de todos os eventos
-        let eventsCollectionRef; // Referência para coleção de eventos
-        // (NOVAS) Variáveis para Notificação
-        let notificationTimer;
-        let isInitialAbsenceLoad = true;
-        let isInitialEventLoad = true;
-        let hasNotificationPermission = false; // (NOVO) Flag de permissão
-
-
         // --- Elementos do DOM ---
-        const calendarGrid = document.getElementById('calendarGrid');
-        const monthYearHeader = document.getElementById('monthYearHeader');
-        const prevMonthBtn = document.getElementById('prevMonthBtn');
-        const nextMonthBtn = document.getElementById('nextMonthBtn');
-        const todayBtn = document.getElementById('todayBtn');
-        const modal = document.getElementById('absenceModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const modalDateHeader = document.getElementById('modalDateHeader');
-        const absenceForm = document.getElementById('absenceForm');
-        const absenceDateInput = document.getElementById('absenceDate');
-        const fullDayCheckbox = document.getElementById('fullDay');
-        const timeFields = document.getElementById('timeFields');
-        const absencesList = document.getElementById('absencesList');
-        const noAbsencesMsg = document.getElementById('noAbsencesMsg');
-        const formError = document.getElementById('formError');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        // Elementos do formulário de Eventos
-        const eventForm = document.getElementById('eventForm');
-        const eventFormError = document.getElementById('eventFormError');
-        const eventsList = document.getElementById('eventsList');
-        const noEventsMsg = document.getElementById('noEventsMsg');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYear = document.getElementById('month-year');
+        const prevMonthButton = document.getElementById('prev-month');
+        const nextMonthButton = document.getElementById('next-month');
         
-        // (NOVOS) Elementos das Abas
-        const tabAusenciasBtn = document.getElementById('tabAusenciasBtn');
-        const tabEventosBtn = document.getElementById('tabEventosBtn');
-        const tabAusenciasContent = document.getElementById('tabAusenciasContent');
-        const tabEventosContent = document.getElementById('tabEventosContent');
-        // (NOVOS) Elementos da Notificação
-        const notificationToast = document.getElementById('notificationToast');
-        const notificationMessage = document.getElementById('notificationMessage');
-        const notificationIcon = document.getElementById('notificationIcon');
-        const notificationCloseBtn = document.getElementById('notificationCloseBtn');
+        const modal = document.getElementById('absenceModal');
+        const modalTitle = document.getElementById('modal-title');
+        const closeModal = document.getElementById('close-modal');
+        const colaboradorInput = document.getElementById('colaborador');
+        const tipoAusenciaInput = document.getElementById('tipo-ausencia');
+        
+        const diaTodoCheckbox = document.getElementById('dia-todo');
+        const timeFieldsContainer = document.getElementById('time-fields');
+        const horaInicioInput = document.getElementById('hora-inicio');
+        const horaFimInput = document.getElementById('hora-fim');
+        const observacaoInput = document.getElementById('observacao'); // (NOVO)
+        
+        const saveAbsenceButton = document.getElementById('save-absence');
+        const absencesList = document.getElementById('absences-list');
 
-        // --- Funções de Inicialização ---
+        const eventNameInput = document.getElementById('event-name');
+        const saveEventButton = document.getElementById('save-event');
+        const eventsList = document.getElementById('events-list');
 
+        const tabAbsences = document.getElementById('tab-absences');
+        const tabEvents = document.getElementById('tab-events');
+        const contentAbsences = document.getElementById('content-absences');
+        const contentEvents = document.getElementById('content-events');
+        
+        const notificationToast = document.getElementById('notification-toast');
+        const notificationTitle = document.getElementById('notification-title');
+        const notificationMessage = document.getElementById('notification-message');
+        const notificationClose = document.getElementById('notification-close');
+
+        const fatalErrorOverlay = document.getElementById('fatalErrorOverlay');
+        const fatalErrorMessage = document.getElementById('fatalErrorMessage');
+
+        const adminAccessButton = document.getElementById('admin-access-button');
+        const passwordModal = document.getElementById('passwordModal');
+        const adminPasswordInput = document.getElementById('admin-password');
+        const cancelPasswordButton = document.getElementById('cancel-password');
+        const submitPasswordButton = document.getElementById('submit-password');
+        const passwordError = document.getElementById('password-error');
+
+        const reportModal = document.getElementById('reportModal');
+        const closeReportButton = document.getElementById('close-report');
+        const monthPieChartCanvas = document.getElementById('monthPieChart');
+        const medicalReportList = document.getElementById('medical-report-list');
+        const pieChartTitle = document.getElementById('pie-chart-title');
+        const medicalReportTitle = document.getElementById('medical-report-title');
+        const reportPrevMonthButton = document.getElementById('report-prev-month');
+        const reportNextMonthButton = document.getElementById('report-next-month');
+
+        
         /**
-         * Inicializa o Firebase e a autenticação.
+         * Inicializa o Firebase
          */
         async function initializeFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
-                const analytics = getAnalytics(app); // Adicionado
+                const analytics = getAnalytics(app);
+                
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Monitora o estado da autenticação
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        console.log('Usuário autenticado:', user.uid);
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId; // Mostra o ID do usuário
-                        
-                        // Define a referência da coleção (PÚBLICA) - Ausências
-                        const absenceCollectionPath = `absences`; // Caminho simplificado
-                        absencesCollectionRef = collection(db, absenceCollectionPath);
-                        
-                        // Define a referência da coleção (PÚBLICA) - Eventos
-                        const eventCollectionPath = `events`; // Caminho simplificado
-                        eventsCollectionRef = collection(db, eventCollectionPath);
-                        
-                        // Inicia o listener de ausências
-                        setupAbsenceListener();
-                        // Inicia o listener de eventos
-                        setupEventListener();
-
-                    } else {
-                        console.log('Nenhum usuário. Tentando autenticar...');
-                        userIdDisplay.textContent = 'autenticando...';
-                        await authenticateUser();
-                    }
-                });
-
-                // Tenta autenticar o usuário imediatamente se não houver um
-                if (!auth.currentUser) {
-                    await authenticateUser();
-                }
+                setupAuthObserver();
+                await authenticateUser();
 
             } catch (error) {
-                console.error("Erro ao inicializar o Firebase:", error);
-                document.body.innerHTML = "<p>Erro ao conectar ao banco de dados. Verifique o console.</p>";
+                console.error("Erro ao inicializar Firebase:", error);
+                showFatalError("Falha ao carregar componentes principais. Verifique sua conexão e as configurações do Firebase.");
             }
-            
-            // (NOVO) Solicita permissão para notificações do navegador
-            await requestNotificationPermission();
+        }
+        
+        /**
+         * Exibe um erro fatal que bloqueia a tela.
+         */
+        function showFatalError(message) {
+            fatalErrorMessage.textContent = message;
+            fatalErrorOverlay.classList.remove('hidden');
         }
 
         /**
-         * Autentica o usuário (com token, se disponível, ou anonimamente).
+         * Autentica o usuário anonimamente.
          */
         async function authenticateUser() {
             try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    console.log("Autenticado com token customizado.");
-                } else {
-                    await signInAnonymously(auth);
-                    console.log("Autenticado anonimamente.");
-                }
+                await signInAnonymously(auth);
+                console.log("Usuário autenticado anonimamente.");
             } catch (error) {
                 console.error("Erro na autenticação:", error);
-                
-                // (MUDANÇA) Mostrar erro específico para o usuário
                 if (error.code === 'auth/configuration-not-found') {
-                    userIdDisplay.innerHTML = '<span class="text-red-600 font-semibold">Falha na Autenticação</span>';
-                    // Adiciona o banner de erro no topo do container
-                    document.querySelector('.container').prepend(createErrorBanner(
-                        'Erro de Configuração: "Login Anônimo" está desativado.',
-                        'Por favor, vá ao painel do Firebase -> Authentication -> Método de login e ative o provedor "Anônimo". Depois, atualize esta página.'
-                    ));
+                    showFatalError("Erro de Autenticação. O 'Login Anônimo' não está ativado no seu painel do Firebase. Vá em 'Authentication' -> 'Sign-in method' e ative 'Anônimo'.");
                 } else {
-                     userIdDisplay.innerHTML = `<span class="text-red-600 font-semibold">Erro: ${error.code}</span>`;
+                    showFatalError(`Erro de Autenticação: ${error.message}`);
                 }
             }
         }
+
+        /**
+         * Configura o listener do estado de autenticação.
+         */
+        function setupAuthObserver() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Observador: Usuário conectado:", userId);
+                    
+                    if (!db) {
+                        console.error("Observador: 'db' (Firestore) ainda não está pronto!");
+                        showFatalError("A conexão com o banco de dados falhou. Tentando reconectar...");
+                        return;
+                    }
+
+                    // Caminhos das coleções
+                    const absenceCollectionPath = `absences`;
+                    const eventCollectionPath = `events`;
+
+                    // (CORREÇÃO) Passa a referência diretamente para as funções
+                    const absRef = collection(db, absenceCollectionPath);
+                    const evtRef = collection(db, eventCollectionPath);
+                    
+                    // Armazena globalmente
+                    absencesCollectionRef = absRef;
+                    eventsCollectionRef = evtRef;
+                    
+                    listenToAbsences(absRef);
+                    listenToEvents(evtRef);
+
+                    requestNotificationPermission();
+
+                } else {
+                    userId = null;
+                    console.log("Observador: Usuário desconectado.");
+                }
+            });
+        }
         
         /**
-         * Configura o listener (onSnapshot) para as ausências.
-         * Isso mantém a lista 'allAbsences' e o calendário sincronizados.
+         * Pede permissão para Notificações do Navegador
          */
-        function setupAbsenceListener() {
-            if (!absencesCollectionRef) return;
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.warn("Este navegador não suporta notificações de desktop.");
+                return;
+            }
 
-            const q = query(absencesCollectionRef);
+            if (Notification.permission === "granted") {
+                hasNotificationPermission = true;
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then((permission) => {
+                    if (permission === "granted") {
+                        hasNotificationPermission = true;
+                        new Notification("Permissão concedida!", { 
+                            body: "Você será notificado sobre novas ausências.",
+                            icon: "https://placehold.co/48x48/blue/white?text=OK"
+                        });
+                    }
+                });
+            }
+        }
+
+        /**
+         * Mostra uma notificação (Toast ou Push)
+         */
+        function notifyNewEntry(title, message, docData) {
+            if (docData.createdBy === userId) {
+                console.log("Ação própria, não notificando.");
+                return;
+            }
+            
+            if (hasNotificationPermission && document.hidden) {
+                const notification = new Notification(title, {
+                    body: message,
+                    icon: "https://placehold.co/48x48/blue/white?text=!"
+                });
+            } else {
+                showToastNotification(title, message);
+            }
+        }
+
+
+        /**
+         * Escuta mudanças na coleção 'absences'.
+         */
+        function listenToAbsences(refToListen) {
+            if (!refToListen) {
+                console.error("listenToAbsences foi chamada sem uma referência válida.");
+                return;
+            }
+
+            const q = query(refToListen); 
             
             onSnapshot(q, (snapshot) => {
+                allAbsences = [];
+                snapshot.forEach((doc) => {
+                    allAbsences.push({ id: doc.id, ...doc.data() });
+                });
                 
-                // (MUDANÇA) Processa notificações ANTES de carregar os dados
-                if (!isInitialAbsenceLoad) {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === 'added') {
-                            const data = change.doc.data();
-                            const message = `Nova Ausência: ${escapeHTML(data.collaboratorName)}`;
-                            // Não notifica o usuário sobre suas próprias adições
-                            if (data.createdBy !== userId) { 
-                                showNotification(message, 'absence'); // Mostra o toast
-                                showBrowserNotification(message); // (NOVO) Tenta mostrar notificação do browser
-                            }
-                        }
-                    });
-                } else {
-                    console.log("Carregamento inicial de ausências, notificações suprimidas.");
-                }
-
-                // Carrega os dados (como antes)
-                allAbsences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("Ausências carregadas:", allAbsences.length);
-                renderCalendar(); // Redesenha o calendário com os novos dados
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && !isInitialAbsenceLoad) {
+                        const newAbsence = change.doc.data();
+                        notifyNewEntry(
+                            "Nova Ausência Registrada",
+                            `${newAbsence.colaborador} marcou: ${getAbsenceTypeText(newAbsence.tipo)}`,
+                            newAbsence
+                        );
+                    }
+                });
                 
-                // (NOVO) Define a flag após o primeiro carregamento
                 isInitialAbsenceLoad = false;
+                renderCalendar(); 
+                updateModalListsIfOpen(); 
 
             }, (error) => {
                 console.error("Erro ao escutar ausências:", error);
-                // (REMOVIDO) Chamada para o overlay de erro
-                if (error.code === 'permission-denied' || error.code === 'PERMISSION_DENIED') {
-                     // showFatalErrorOverlay();
-                     console.error("--- ERRO DE PERMISSÃO (Ausências) ---");
-                     // Adiciona um banner de erro mais simples
-                     document.querySelector('.container').prepend(createErrorBanner(
-                        'Erro de Permissão (Ausências)',
-                        'Não foi possível ler os dados. Verifique suas "Regras" no Cloud Firestore. Elas precisam permitir a leitura (read) da coleção "absences".'
-                    ));
+                if (error.code === 'permission-denied') {
+                    showFatalError("Erro de Permissão. Verifique suas 'Regras' no Cloud Firestore. A coleção 'absences' precisa de permissão de 'read'.");
                 }
             });
         }
-        
-        /**
-         * Configura o listener (onSnapshot) para os eventos.
-         */
-        function setupEventListener() {
-            if (!eventsCollectionRef) return;
 
-            const q = query(eventsCollectionRef);
+        /**
+         * Escuta mudanças na coleção 'events'.
+         */
+        function listenToEvents(refToListen) {
+            if (!refToListen) {
+                console.error("listenToEvents foi chamada sem uma referência válida.");
+                return;
+            }
+            
+            const q = query(refToListen); 
             
             onSnapshot(q, (snapshot) => {
+                allEvents = [];
+                snapshot.forEach((doc) => {
+                    allEvents.push({ id: doc.id, ...doc.data() });
+                });
 
-                // (MUDANÇA) Processa notificações ANTES de carregar os dados
-                if (!isInitialEventLoad) {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === 'added') {
-                            const data = change.doc.data();
-                            const message = `Novo Evento: ${escapeHTML(data.eventName)}`;
-                            // Não notifica o usuário sobre suas próprias adições
-                            if (data.createdBy !== userId) { 
-                                showNotification(message, 'event'); // Mostra o toast
-                                showBrowserNotification(message); // (NOVO) Tenta mostrar notificação do browser
-                            }
-                        }
-                    });
-                } else {
-                    console.log("Carregamento inicial de eventos, notificações suprimidas.");
-                }
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && !isInitialEventLoad) {
+                        const newEvent = change.doc.data();
+                        notifyNewEntry(
+                            "Novo Evento Marcado",
+                            `${newEvent.nome}`,
+                            newEvent
+                        );
+                    }
+                });
 
-                // Carrega os dados (como antes)
-                allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("Eventos carregados:", allEvents.length);
-                renderCalendar(); // Redesenha o calendário com os novos dados
-                
-                // (NOVO) Define a flag após o primeiro carregamento
                 isInitialEventLoad = false;
+                renderCalendar();
+                updateModalListsIfOpen();
 
             }, (error) => {
                 console.error("Erro ao escutar eventos:", error);
-                // (REMOVIDO) Chamada para o overlay de erro
-                if (error.code === 'permission-denied' || error.code === 'PERMISSION_DENIED') {
-                     // showFatalErrorOverlay();
-                     console.error("--- ERRO DE PERMISSÃO (Eventos) ---");
-                     // Adiciona um banner de erro mais simples
-                     document.querySelector('.container').prepend(createErrorBanner(
-                        'Erro de Permissão (Eventos)',
-                        'Não foi possível ler os dados. Verifique suas "Regras" no Cloud Firestore. Elas precisam permitir a leitura (read) da coleção "events".'
-                    ));
+                if (error.code === 'permission-denied') {
+                    showFatalError("Erro de Permissão. Verifique suas 'Regras' no Cloud Firestore. A coleção 'events' precisa de permissão de 'read'.");
                 }
             });
         }
 
 
-        // --- Funções do Calendário ---
-
         /**
-         * Renderiza o grid do calendário para o mês em 'currentDate'.
+         * Renderiza o calendário para o mês atual.
          */
         function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            
+            const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
-            const month = currentDate.getMonth(); // 0-11
-
-            // Atualiza o cabeçalho (ex: "Novembro 2025")
-            monthYearHeader.textContent = new Intl.DateTimeFormat('pt-BR', {
-                month: 'long',
-                year: 'numeric'
-            }).format(currentDate);
-
-            calendarGrid.innerHTML = ''; // Limpa o grid
-
-            const firstDayOfMonth = new Date(year, month, 1);
-            const lastDayOfMonth = new Date(year, month + 1, 0);
-            const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 (Dom) - 6 (Sáb)
-            const daysInMonth = lastDayOfMonth.getDate();
-
-            const lastDayOfPrevMonth = new Date(year, month, 0);
-            const daysInPrevMonth = lastDayOfPrevMonth.getDate();
-
-            // 1. Adiciona dias do mês anterior (para preencher o grid)
-            for (let i = firstDayOfWeek; i > 0; i--) {
-                const day = daysInPrevMonth - i + 1;
-                const dateStr = getISODate(new Date(year, month - 1, day));
-                calendarGrid.appendChild(
-                    createDayElement(day, dateStr, true)
-                );
+            
+            monthYear.textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarGrid.appendChild(document.createElement('div'));
             }
-
-            // 2. Adiciona dias do mês atual
+            
             for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = getISODate(new Date(year, month, day));
-                calendarGrid.appendChild(
-                    createDayElement(day, dateStr, false)
-                );
-            }
-
-            // 3. Adiciona dias do próximo mês (para preencher o grid)
-            // Ajuste para garantir 6 linhas (total 42 células) se necessário
-            const totalCells = firstDayOfWeek + daysInMonth;
-            const remainingCells = totalCells <= 35 ? 42 - totalCells : 42 - totalCells; // Garante 6 linhas
-            
-            for (let i = 1; i <= remainingCells; i++) {
-                const dateStr = getISODate(new Date(year, month + 1, i));
-                calendarGrid.appendChild(
-                    createDayElement(i, dateStr, true)
-                );
-            }
-        }
-
-        /**
-         * Cria um elemento <div> para um dia no calendário.
-         * @param {number} day - O número do dia (ex: 15)
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
-         * @param {boolean} isOtherMonth - Se o dia pertence a outro mês
-         */
-        function createDayElement(day, dateStr, isOtherMonth) {
-            const dayWrapper = document.createElement('div');
-            dayWrapper.className = `calendar-day p-2 bg-white relative ${isOtherMonth ? 'other-month' : 'hover:bg-gray-50 cursor-pointer'}`;
-            dayWrapper.dataset.date = dateStr;
-
-            const dayNumber = document.createElement('span');
-            dayNumber.className = 'text-sm font-medium mb-1'; // Margem inferior adicionada
-            dayNumber.textContent = day;
-            
-            // Marca o dia de hoje
-            const todayStr = getISODate(new Date());
-            if (dateStr === todayStr && !isOtherMonth) {
-                // Novo estilo para "Hoje" (círculo azul apenas no número)
-                dayNumber.className += ' bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center';
-            } else {
-                 dayNumber.className += ' text-gray-700 w-6 h-6 flex items-center justify-center'; // Garante alinhamento
-            }
-            
-            dayWrapper.appendChild(dayNumber);
-
-            // Adiciona lista de ausências (Pílulas)
-            const absencesOnThisDay = getAbsencesForDate(dateStr);
-            const eventsOnThisDay = getEventsForDate(dateStr); // Busca eventos
-            
-            if (!isOtherMonth) {
-                // Container para as pílulas de ausência
-                const itemsListEl = document.createElement('div');
-                // flex-grow: ocupa espaço; overflow-y-auto: barra de rolagem se necessário
-                // Ajuste de altura máxima: 120px (total) - ~28px (número) - 8px (padding) - 4px (mb) = ~80px
-                itemsListEl.className = 'flex-grow overflow-y-auto max-h-[80px] mt-1 space-y-1';
-
-                // 1. Renderiza Eventos/Feriados
-                if (eventsOnThisDay.length > 0) {
-                    eventsOnThisDay.forEach(event => {
-                        const eventEl = document.createElement('div');
-                        // Aplica as classes de pílula
-                        eventEl.className = `absence-pill pill-event`;
-                        eventEl.textContent = escapeHTML(event.eventName);
-                        eventEl.title = escapeHTML(event.eventName);
-                        itemsListEl.appendChild(eventEl);
-                    });
+                const date = new Date(year, month, day);
+                const dateISO = date.toISOString().split('T')[0];
+                
+                const daySquare = document.createElement('div');
+                daySquare.className = 'relative p-2 h-24 lg:h-32 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-colors flex flex-col overflow-hidden';
+                daySquare.dataset.date = dateISO;
+                
+                const dayNumber = document.createElement('span');
+                dayNumber.className = 'font-semibold text-sm text-gray-700';
+                dayNumber.textContent = day;
+                
+                if (isToday(date)) {
+                    dayNumber.className = 'flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full font-bold text-sm';
+                    daySquare.classList.add('bg-blue-50');
                 }
+                daySquare.appendChild(dayNumber);
+                
+                const pillsContainer = document.createElement('div');
+                pillsContainer.className = 'mt-1.5 space-y-1 overflow-y-auto overflow-x-hidden flex-1';
 
-                // 2. Renderiza Ausências
-                if (absencesOnThisDay.length > 0) {
-                    absencesOnThisDay.forEach(absence => {
-                        const absenceEl = document.createElement('div');
-                        // Aplica as classes de pílula
-                        absenceEl.className = `absence-pill pill-${absence.absenceType}`;
-                        absenceEl.textContent = escapeHTML(absence.collaboratorName);
-                        // Tooltip para ver o nome completo e o tipo
-                        absenceEl.title = `${escapeHTML(absence.collaboratorName)} - ${getAbsenceTypeLabel(absence.absenceType)}`;
-                        itemsListEl.appendChild(absenceEl);
-                    });
-                }
-                dayWrapper.appendChild(itemsListEl);
-            }
-
-            // Adiciona evento de clique (apenas para dias do mês atual)
-            if (!isOtherMonth) {
-                dayWrapper.addEventListener('click', () => {
-                    openModal(dateStr);
+                const absencesForDay = allAbsences.filter(a => a.date === dateISO);
+                absencesForDay.forEach(absence => {
+                    const pill = createAbsencePill(absence);
+                    pillsContainer.appendChild(pill);
                 });
-            }
 
-            return dayWrapper;
+                const eventsForDay = allEvents.filter(e => e.date === dateISO);
+                eventsForDay.forEach(event => {
+                    const pill = createEventPill(event);
+                    pillsContainer.appendChild(pill);
+                });
+                
+                daySquare.appendChild(pillsContainer);
+                calendarGrid.appendChild(daySquare);
+            }
+        }
+        
+        /**
+         * Cria uma "pílula" de ausência para o calendário.
+         */
+        function createAbsencePill(absence) {
+            const pill = document.createElement('div');
+            let bgColor, textColor, borderColor;
+            
+            switch (absence.tipo) {
+                case 'medical':
+                    bgColor = 'bg-red-100'; textColor = 'text-red-800'; borderColor = 'border-red-300';
+                    break;
+                case 'time_bank':
+                    bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; borderColor = 'border-blue-300';
+                    break;
+                case 'personal':
+                    bgColor = 'bg-orange-100'; textColor = 'text-orange-800'; borderColor = 'border-orange-300';
+                    break;
+                default:
+                    bgColor = 'bg-gray-100'; textColor = 'text-gray-800'; borderColor = 'border-gray-300';
+            }
+            
+            pill.className = `w-full text-xs font-medium px-2 py-0.5 rounded-md truncate ${bgColor} ${textColor} border ${borderColor}`;
+            pill.textContent = absence.colaborador; 
+            return pill;
         }
 
-
-        // --- Funções do Modal ---
+        /**
+         * Cria uma "pílula" de evento para o calendário.
+         */
+        function createEventPill(event) {
+            const pill = document.createElement('div');
+            pill.className = `w-full text-xs font-medium px-2 py-0.5 rounded-md truncate bg-purple-100 text-purple-800 border border-purple-300`;
+            pill.textContent = event.nome;
+            return pill;
+        }
 
         /**
-         * (NOVO) Controla a visibilidade das abas.
-         * @param {'ausencias' | 'eventos'} tabName
+         * Verifica se uma data é "hoje".
          */
-        function showTab(tabName) {
-            if (tabName === 'ausencias') {
-                tabAusenciasContent.classList.remove('hidden');
-                tabEventosContent.classList.add('hidden');
-                tabAusenciasBtn.classList.add('active');
-                tabEventosBtn.classList.remove('active');
-            } else {
-                tabAusenciasContent.classList.add('hidden');
-                tabEventosContent.classList.remove('hidden');
-                tabAusenciasBtn.classList.remove('active');
-                tabEventosBtn.classList.add('active');
-            }
+        function isToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() &&
+                   date.getMonth() === today.getMonth() &&
+                   date.getFullYear() === today.getFullYear();
         }
 
         /**
          * Abre o modal para uma data específica.
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
          */
-        function openModal(dateStr) {
-            const date = parseISODate(dateStr);
+        function openModal(dateISO) {
+            selectedDateISO = dateISO;
+            const dateObj = new Date(dateISO + 'T12:00:00'); 
             
-            // Formata a data para o cabeçalho (ex: "11 de Novembro, 2025")
-            modalDateHeader.textContent = new Intl.DateTimeFormat('pt-BR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            }).format(date);
+            const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+            modalTitle.textContent = `Atividades para ${formattedDate}`;
             
-            // Define a data oculta no formulário
-            absenceDateInput.value = dateStr;
-
-            // Reseta o formulário de ausência
-            absenceForm.reset();
-            formError.classList.add('hidden');
-            formError.textContent = '';
-            toggleTimeFields(); // Garante que os campos de hora estão no estado correto
+            updateModalLists();
             
-            // Reseta o formulário de evento
-            eventForm.reset();
-            eventFormError.classList.add('hidden');
-            eventFormError.textContent = '';
-
-            // Carrega e exibe as ausências existentes para este dia
-            renderAbsencesForDay(dateStr);
-            // Carrega e exibe os eventos existentes para este dia
-            renderEventsForDay(dateStr);
-
-            // (NOVO) Reseta para a primeira aba (Ausências)
-            showTab('ausencias');
-
-            modal.style.display = 'flex';
+            colaboradorInput.value = '';
+            tipoAusenciaInput.value = 'medical';
+            eventNameInput.value = '';
+            
+            diaTodoCheckbox.checked = true; 
+            toggleTimeFields(); 
+            horaInicioInput.value = '';
+            horaFimInput.value = '';
+            observacaoInput.value = ''; // (NOVO)
+            
+            showTab('absences');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
+            }, 10);
         }
 
         /**
-         * Fecha o modal.
+         * Fecha o modal de ausência.
          */
-        function closeModal() {
-            modal.style.display = 'none';
+        function closeModalHandler() {
+            modal.firstElementChild.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 150);
         }
-
+        
         /**
-         * Atualiza a visibilidade dos campos de hora baseado no checkbox 'Dia Todo'.
+         * Mostra/esconde campos de hora baseado no "Dia todo"
          */
         function toggleTimeFields() {
-            if (fullDayCheckbox.checked) {
-                timeFields.classList.add('hidden');
+            if (diaTodoCheckbox.checked) {
+                timeFieldsContainer.classList.add('hidden');
             } else {
-                timeFields.classList.remove('hidden');
+                timeFieldsContainer.classList.remove('hidden');
             }
         }
-
+        
+        
         /**
-         * Renderiza a lista de ausências para o dia selecionado dentro do modal.
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         * Atualiza as listas (Ausências e Eventos) dentro do modal.
          */
-        function renderAbsencesForDay(dateStr) {
-            const absencesOnThisDay = getAbsencesForDate(dateStr);
-            absencesList.innerHTML = ''; // Limpa a lista anterior
-
-            if (absencesOnThisDay.length === 0) {
-                absencesList.appendChild(noAbsencesMsg); // Mostra a msg "Nenhuma ausência"
-                noAbsencesMsg.style.display = 'block';
+        function updateModalLists() {
+            // Atualiza lista de ausências
+            const absencesForDay = allAbsences.filter(a => a.date === selectedDateISO);
+            absencesList.innerHTML = '';
+            if (absencesForDay.length === 0) {
+                absencesList.innerHTML = '<p class="text-sm text-gray-500">Nenhuma ausência registrada para este dia.</p>';
             } else {
-                noAbsencesMsg.style.display = 'none';
-                
-                absencesOnThisDay.forEach(absence => {
-                    const absenceEl = document.createElement('div');
-                    absenceEl.className = 'p-3 border rounded-md bg-gray-50 flex justify-between items-start group'; // Adicionado 'group'
+                absencesForDay.forEach(absence => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200';
                     
-                    let durationText = absence.fullDay
-                        ? "Dia todo"
-                        : `das ${absence.startTime || '?'} às ${absence.endTime || '?'}`;
-
-                    let notesText = absence.notes ? `<p class="text-xs text-gray-500 mt-1 italic">Obs: ${escapeHTML(absence.notes)}</p>` : '';
-
-                    absenceEl.innerHTML = `
-                        <div>
-                            <p class="font-semibold text-gray-800">${escapeHTML(absence.collaboratorName)}</p>
-                            <p class="text-sm text-gray-600 flex items-center">
-                                <span class="absence-marker inline-block marker-${absence.absenceType}"></span>
-                                ${getAbsenceTypeLabel(absence.absenceType)} (${durationText})
-                            </p>
-                            ${notesText}
+                    // (NOVO) Sanitiza a observação
+                    const observacao = absence.observacao ? 
+                        `<p class="text-xs text-gray-500 italic mt-1">${escapeHTML(absence.observacao)}</p>` : '';
+                    
+                    const detalhes = absence.detalhes ? 
+                        `<p class="text-sm text-gray-600">${escapeHTML(absence.detalhes)}</p>` : '';
+                    
+                    item.innerHTML = `
+                        <div class="flex-1">
+                            <p class="font-semibold text-sm text-gray-800">${escapeHTML(absence.colaborador)}</p>
+                            <p class="text-sm text-gray-600">${getAbsenceTypeText(absence.tipo)}</p>
+                            ${detalhes}
+                            ${observacao}
                         </div>
-                        <button data-id="${absence.id}" class="delete-btn text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <button data-id="${absence.id}" class="delete-absence flex-shrink-0 ml-2 p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 focus:outline-none" aria-label="Excluir ausência">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                         </button>
                     `;
-                    absencesList.appendChild(absenceEl);
+                    absencesList.appendChild(item);
                 });
-                
-                // Adiciona listeners aos botões de deletar
-                absencesList.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', handleDeleteAbsence);
+            }
+
+            // Atualiza lista de eventos
+            const eventsForDay = allEvents.filter(e => e.date === selectedDateISO);
+            eventsList.innerHTML = '';
+            if (eventsForDay.length === 0) {
+                eventsList.innerHTML = '<p class="text-sm text-gray-500">Nenhum evento registrado para este dia.</p>';
+            } else {
+                eventsForDay.forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200';
+                    item.innerHTML = `
+                        <p class="font-semibold text-sm text-purple-800">${escapeHTML(event.nome)}</p>
+                        <button data-id="${event.id}" class="delete-event p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 focus:outline-none" aria-label="Excluir evento">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    `;
+                    eventsList.appendChild(item);
                 });
             }
         }
         
         /**
-         * Renderiza a lista de eventos para o dia selecionado dentro do modal.
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         * (NOVO) Sanitiza HTML para evitar XSS
          */
-        function renderEventsForDay(dateStr) {
-            const eventsOnThisDay = getEventsForDate(dateStr);
-            eventsList.innerHTML = ''; // Limpa a lista anterior
-
-            if (eventsOnThisDay.length === 0) {
-                eventsList.appendChild(noEventsMsg); // Mostra a msg "Nenhum evento"
-                noEventsMsg.style.display = 'block';
-            } else {
-                noEventsMsg.style.display = 'none';
-                
-                eventsOnThisDay.forEach(event => {
-                    const eventEl = document.createElement('div');
-                    eventEl.className = 'p-3 border rounded-md bg-purple-50 flex justify-between items-start group';
-                    
-                    eventEl.innerHTML = `
-                        <div>
-                            <p class="font-semibold text-purple-800">${escapeHTML(event.eventName)}</p>
-                        </div>
-                        <button data-id="${event.id}" class="delete-event-btn text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    `;
-                    eventsList.appendChild(eventEl);
-                });
-                
-                // Adiciona listeners aos botões de deletar
-                eventsList.querySelectorAll('.delete-event-btn').forEach(btn => {
-                    btn.addEventListener('click', handleDeleteEvent);
-                });
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[m];
+            });
+        }
+        
+        /**
+         * Atualiza o modal (se ele estiver aberto)
+         */
+        function updateModalListsIfOpen() {
+            if (!modal.classList.contains('hidden')) {
+                updateModalLists();
             }
         }
-
-
-        // --- Funções de Manipulação de Dados (Firestore) ---
-
+        
+        /**
+         * Retorna o texto legível para o tipo de ausência.
+         */
+        function getAbsenceTypeText(type) {
+            switch(type) {
+                case 'medical': return 'Atestado Médico';
+                case 'time_bank': return 'Banco de Horas';
+                case 'personal': return 'Motivo Pessoal';
+                default: return 'Outro';
+            }
+        }
+        
         /**
          * Salva uma nova ausência no Firestore.
          */
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            formError.classList.add('hidden');
+        async function handleSaveAbsence() {
+            const colaborador = colaboradorInput.value.trim();
+            const tipo = tipoAusenciaInput.value;
+            const observacao = observacaoInput.value.trim(); // (NOVO)
             
-            const collaboratorName = document.getElementById('collaboratorName').value;
-            const absenceType = document.getElementById('absenceType').value;
-            const fullDay = fullDayCheckbox.checked;
-            const startTime = document.getElementById('startTime').value;
-            const endTime = document.getElementById('endTime').value;
-            const notes = document.getElementById('notes').value;
-            const absenceDate = absenceDateInput.value;
-
-            // Validação
-            if (!collaboratorName) {
-                showFormError("O nome do colaborador é obrigatório.");
+            if (!colaborador) {
+                alert('Por favor, insira o nome do colaborador.');
                 return;
             }
-            if (!fullDay && (!startTime || !endTime)) {
-                showFormError("Para ausência parcial, as horas de início e fim são obrigatórias.");
-                return;
-            }
-             if (!fullDay && startTime >= endTime) {
-                showFormError("A hora de início deve ser anterior à hora de fim.");
-                return;
-            }
-
-            try {
-                const newAbsence = {
-                    collaboratorName,
-                    absenceType,
-                    fullDay,
-                    startTime: fullDay ? null : startTime,
-                    endTime: fullDay ? null : endTime,
-                    notes,
-                    absenceDate, // 'YYYY-MM-DD'
-                    createdAt: serverTimestamp(),
-                    createdBy: userId // Guarda quem criou
-                };
-
-                // Adiciona o documento ao Firestore
-                await addDoc(absencesCollectionRef, newAbsence);
-
-                console.log("Ausência salva com sucesso!");
+            
+            let detalhes = "Dia todo";
+            if (!diaTodoCheckbox.checked) {
+                const inicio = horaInicioInput.value;
+                const fim = horaFimInput.value;
                 
-                // O onSnapshot cuidará de atualizar a UI.
-                // Apenas resetamos o formulário e recarregamos a lista do modal.
-                absenceForm.reset();
-                toggleTimeFields();
-                renderAbsencesForDay(absenceDate); // Atualiza a lista no modal imediatamente
+                if (!inicio || !fim) {
+                    alert('Por favor, preencha a Hora Início e a Hora Fim.');
+                    return;
+                }
+                if (fim <= inicio) {
+                    alert('A Hora Fim deve ser maior que a Hora Início.');
+                    return;
+                }
+                detalhes = `Das ${inicio} às ${fim}`;
+            }
 
+            if (!selectedDateISO) return;
+            
+            try {
+                await addDoc(absencesCollectionRef, {
+                    date: selectedDateISO,
+                    colaborador: colaborador,
+                    tipo: tipo,
+                    detalhes: detalhes, 
+                    isAllDay: diaTodoCheckbox.checked, 
+                    startTime: diaTodoCheckbox.checked ? null : horaInicioInput.value,
+                    endTime: diaTodoCheckbox.checked ? null : horaFimInput.value,
+                    observacao: observacao, // (NOVO)
+                    createdAt: Timestamp.now(),
+                    createdBy: userId 
+                });
+                
+                closeModalHandler();
+                
             } catch (error) {
                 console.error("Erro ao salvar ausência:", error);
-                showFormError("Ocorreu um erro ao salvar. Tente novamente.");
+                if (error.code === 'permission-denied') {
+                    alert("Erro de Permissão. Você não tem autorização para salvar dados. Verifique as 'Regras' do Firestore.");
+                } else {
+                    alert("Erro ao salvar. Tente novamente.");
+                }
             }
         }
-        
+
         /**
          * Salva um novo evento no Firestore.
          */
-        async function handleEventFormSubmit(e) {
-            e.preventDefault();
-            eventFormError.classList.add('hidden');
+        async function handleSaveEvent() {
+            const nome = eventNameInput.value.trim();
             
-            const eventName = document.getElementById('eventName').value;
-            const absenceDate = absenceDateInput.value; // Pega a data do modal
-
-            // Validação
-            if (!eventName) {
-                showEventFormError("O nome do evento é obrigatório.");
+            if (!nome) {
+                alert('Por favor, insira o nome do evento.');
                 return;
             }
-
+            
+            if (!selectedDateISO) return;
+            
             try {
-                const newEvent = {
-                    eventName,
-                    absenceDate, // 'YYYY-MM-DD'
-                    createdAt: serverTimestamp(),
-                    createdBy: userId // Guarda quem criou
-                };
-
-                // Adiciona o documento ao Firestore (na coleção de eventos)
-                await addDoc(eventsCollectionRef, newEvent);
-
-                console.log("Evento salvo com sucesso!");
+                await addDoc(eventsCollectionRef, {
+                    date: selectedDateISO,
+                    nome: nome,
+                    createdAt: Timestamp.now(),
+                    createdBy: userId 
+                });
                 
-                eventForm.reset();
-                renderEventsForDay(absenceDate); // Atualiza a lista no modal imediatamente
-
+                eventNameInput.value = '';
+                closeModalHandler();
+                
             } catch (error) {
                 console.error("Erro ao salvar evento:", error);
-                showEventFormError("Ocorreu um erro ao salvar. Tente novamente.");
+                 if (error.code === 'permission-denied') {
+                    alert("Erro de Permissão. Você não tem autorização para salvar dados. Verifique as 'Regras' do Firestore.");
+                } else {
+                    alert("Erro ao salvar. Tente novamente.");
+                }
             }
         }
-        
+
         /**
          * Deleta uma ausência do Firestore.
          */
         async function handleDeleteAbsence(e) {
-            // A LINHA "function handleDeleteEvent(e)" FOI REMOVIDA DESTE LOCAL
-            const button = e.currentTarget;
-            const docId = button.dataset.id;
+            if (!e.target.closest('.delete-absence')) return;
             
-            if (!docId) {
-                console.error("ID do documento não encontrado no botão.");
-                return;
-            }
-
-            // Simples confirmação (o ideal seria um modal customizado)
-            if (!window.confirm("Tem certeza que deseja excluir esta ausência?")) {
-                return;
-            }
-
-            try {
-                const docRef = doc(db, absencesCollectionRef.path, docId);
-                await deleteDoc(docRef);
-                console.log("Ausência deletada com sucesso!");
-                // O onSnapshot cuidará de atualizar o calendário.
-                
-                // Para atualizar a lista do modal imediatamente:
-                const currentModalDate = absenceDateInput.value;
-                if(currentModalDate) {
-                    renderAbsencesForDay(currentModalDate);
+            const id = e.target.closest('.delete-absence').dataset.id;
+            if (!id) return;
+            
+            if (confirm('Tem certeza que deseja excluir esta ausência?')) {
+                try {
+                    await deleteDoc(doc(absencesCollectionRef, id));
+                } catch (error) {
+                    console.error("Erro ao deletar ausência:", error);
+                     if (error.code === 'permission-denied') {
+                        alert("Erro de Permissão. Você não tem autorização para deletar dados.");
+                    } else {
+                        alert("Erro ao deletar. Tente novamente.");
+                    }
                 }
-
-            } catch (error) {
-                console.error("Erro ao deletar ausência:", error);
-                alert("Erro ao excluir. Tente novamente.");
             }
         }
 
@@ -1065,278 +994,338 @@
          * Deleta um evento do Firestore.
          */
         async function handleDeleteEvent(e) {
-            const button = e.currentTarget;
-            const docId = button.dataset.id;
+            if (!e.target.closest('.delete-event')) return;
             
-            if (!docId) {
-                console.error("ID do documento não encontrado no botão.");
-                return;
-            }
-
-            if (!window.confirm("Tem certeza que deseja excluir este evento?")) {
-                return;
-            }
-
-            try {
-                const docRef = doc(db, eventsCollectionRef.path, docId);
-                await deleteDoc(docRef);
-                console.log("Evento deletado com sucesso!");
-                
-                const currentModalDate = absenceDateInput.value;
-                if(currentModalDate) {
-                    renderEventsForDay(currentModalDate);
-                }
-
-            } catch (error) {
-                console.error("Erro ao deletar evento:", error);
-                alert("Erro ao excluir. Tente novamente.");
-            }
-        }
-
-        // --- Funções Utilitárias ---
-
-        /**
-         * (NOVA FUNÇÃO) Solicita permissão para Notificações do Navegador (Web Notifications API)
-         */
-        async function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                console.log("Este navegador não suporta notificações de desktop.");
-                return;
-            }
-
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    console.log("Permissão para notificações concedida.");
-                    hasNotificationPermission = true;
-                    // (Opcional) Mostrar uma notificação de teste
-                    // showBrowserNotification("As notificações estão ativadas!", "Teste");
-                } else {
-                    console.log("Permissão para notificações negada.");
-                    hasNotificationPermission = false;
-                }
-            } catch (error) {
-                console.error("Erro ao solicitar permissão de notificação:", error);
-            }
-        }
-
-        /**
-         * (NOVA FUNÇÃO) Mostra uma notificação do navegador (se a permissão foi dada).
-         * @param {string} title O título da notificação
-         * @param {string} body O corpo (opcional)
-         */
-        function showBrowserNotification(title, body = "") {
-            // Só mostra se a permissão foi dada E se a aba não estiver em foco
-            if (hasNotificationPermission && !document.hasFocus()) {
-                const notification = new Notification(title, {
-                    body: body || "O calendário de ausências foi atualizado.",
-                    icon: "https://placehold.co/72x72/2563eb/white?text=CAL" // Ícone placeholder
-                });
-                
-                // Fecha a notificação automaticamente após 5 segundos
-                setTimeout(notification.close.bind(notification), 5000);
-            } else {
-                if (!hasNotificationPermission) {
-                    console.log("Tentativa de notificação do browser falhou: permissão negada.");
-                }
-                if (document.hasFocus()) {
-                    console.log("Tentativa de notificação do browser suprimida: aba em foco.");
+            const id = e.target.closest('.delete-event').dataset.id;
+            if (!id) return;
+            
+            if (confirm('Tem certeza que deseja excluir este evento?')) {
+                try {
+                    await deleteDoc(doc(eventsCollectionRef, id));
+                } catch (error) {
+                    console.error("Erro ao deletar evento:", error);
+                    if (error.code === 'permission-denied') {
+                        alert("Erro de Permissão. Você não tem autorização para deletar dados.");
+                    } else {
+                        alert("Erro ao deletar. Tente novamente.");
+                    }
                 }
             }
         }
-
+        
         /**
-         * (FUNÇÃO EXISTENTE) Mostra a notificação toast (na página).
-         * @param {string} message A mensagem a ser exibida.
-         * @param {'absence' | 'event'} type O tipo de notificação (para estilização).
+         * Mostra a notificação "toast"
          */
-        function showNotification(message, type = 'absence') {
-            // Limpa o timer anterior se houver um
+        function showToastNotification(title, message) {
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
             if (notificationTimer) {
                 clearTimeout(notificationTimer);
             }
 
-            notificationMessage.textContent = message;
+            notificationToast.classList.remove('opacity-0', 'translate-x-full');
+            notificationToast.classList.add('opacity-100', 'translate-x-0');
 
-            // Muda o estilo/ícone baseado no tipo
-            if (type === 'event') {
-                notificationToast.classList.add('event'); // Adiciona classe roxa
-                notificationIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`; // Ícone de calendário
-            } else {
-                notificationToast.classList.remove('event'); // Remove classe roxa
-                notificationIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`; // Ícone de gráfico
-            }
-            
-            // Mostra o toast
-            notificationToast.classList.add('show');
-
-            // Define um timer para esconder o toast após 5 segundos
             notificationTimer = setTimeout(() => {
                 hideNotification();
-            }, 5000);
+            }, 5000); 
         }
-
+        
         /**
-         * (NOVA FUNÇÃO) Esconde a notificação toast.
+         * Esconde a notificação "toast"
          */
         function hideNotification() {
-            if (notificationTimer) {
-                clearTimeout(notificationTimer);
-                notificationTimer = null;
-            }
-            notificationToast.classList.remove('show');
+            notificationToast.classList.add('opacity-0');
+            setTimeout(() => {
+                notificationToast.classList.add('translate-x-full');
+            }, 500); 
         }
 
-        /**
-         * Cria um banner de erro para ser inserido no topo da página.
-         * @param {string} title - O título do erro
-         * @param {string} message - A mensagem de erro
-         */
-        function createErrorBanner(title, message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-800';
-            errorDiv.innerHTML = `
-                <p class="font-bold">${escapeHTML(title)}</p>
-                <p>${escapeHTML(message)}</p>
-            `;
-            return errorDiv;
-        }
 
         /**
-         * Retorna a lista de ausências para uma data específica.
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
+         * Controla a troca de abas no modal
          */
-        function getAbsencesForDate(dateStr) {
-            // Ordena por nome para consistência
-            return allAbsences
-                .filter(a => a.absenceDate === dateStr)
-                .sort((a, b) => a.collaboratorName.localeCompare(b.collaboratorName));
-        }
-        
-        /**
-         * Retorna a lista de eventos para uma data específica.
-         * @param {string} dateStr - A data no formato 'YYYY-MM-DD'
-         */
-        function getEventsForDate(dateStr) {
-            return allEvents
-                .filter(e => e.absenceDate === dateStr)
-                .sort((a, b) => a.eventName.localeCompare(b.eventName));
-        }
-        
-        /**
-         * Converte um objeto Date para uma string 'YYYY-MM-DD'.
-         * @param {Date} date
-         */
-        function getISODate(date) {
-            return date.toISOString().split('T')[0];
-        }
-
-        /**
-         * Converte uma string 'YYYY-MM-DD' para um objeto Date (considerando fuso horário local).
-         * @param {string} dateStr
-         */
-        function parseISODate(dateStr) {
-            const parts = dateStr.split('-'); // YYYY, MM, DD
-            // Note: new Date(year, monthIndex, day)
-            return new Date(parts[0], parts[1] - 1, parts[2]);
-        }
-
-        /**
-         * Retorna o rótulo legível para um tipo de ausência.
-         * @param {string} type - ex: 'medical'
-         */
-        function getAbsenceTypeLabel(type) {
-            switch (type) {
-                case 'medical': return 'Atestado Médico';
-                case 'time_bank': return 'Banco de Horas';
-                case 'personal': return 'Motivo Pessoal';
-                default: return 'Outro';
+        function showTab(tabId) {
+            if (tabId === 'absences') {
+                tabAbsences.classList.add('text-blue-600', 'border-blue-600');
+                tabAbsences.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                contentAbsences.classList.remove('hidden');
+                
+                tabEvents.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                tabEvents.classList.remove('text-blue-600', 'border-blue-600');
+                contentEvents.classList.add('hidden');
+            } else {
+                tabEvents.classList.add('text-blue-600', 'border-blue-600');
+                tabEvents.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                contentEvents.classList.remove('hidden');
+                
+                tabAbsences.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                tabAbsences.classList.remove('text-blue-600', 'border-blue-600');
+                contentAbsences.classList.add('hidden');
             }
         }
+        
+        
+        // --- Funções do Relatório (Admin) ---
+        
+        /**
+         * Mostra o modal de senha
+         */
+        function showPasswordModal() {
+            adminPasswordInput.value = '';
+            passwordError.classList.add('hidden');
+            passwordModal.classList.remove('hidden');
+        }
 
         /**
-         * Mostra uma mensagem de erro no formulário.
-         * @param {string} message
+         * Esconde o modal de senha
          */
-        function showFormError(message) {
-            formError.textContent = message;
-            formError.classList.remove('hidden');
+        function hidePasswordModal() {
+            passwordModal.classList.add('hidden');
+        }
+
+        /**
+         * Verifica a senha
+         */
+        function checkPassword() {
+            if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                hidePasswordModal();
+                showReportModal();
+            } else {
+                passwordError.classList.remove('hidden');
+            }
         }
         
         /**
-         * Mostra uma mensagem de erro no formulário de evento.
-         * @param {string} message
+         * Mostra o modal de relatório
          */
-        function showEventFormError(message) {
-            eventFormError.textContent = message;
-            eventFormError.classList.remove('hidden');
+        function showReportModal() {
+            reportDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            
+            updateReportData(); 
+            
+            reportModal.classList.remove('hidden');
+            setTimeout(() => {
+                reportModal.firstElementChild.classList.remove('scale-95', 'opacity-0');
+            }, 10);
         }
         
         /**
-         * Escapa HTML para exibição segura.
-         * @param {string} str
+         * Atualiza os dados do relatório (Gráfico e Lista)
          */
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[m];
+        function updateReportData() {
+            const year = reportDate.getFullYear();
+            
+            // 1. Dados para o Gráfico (ANUAL)
+            const yearAbsences = allAbsences.filter(a => {
+                const absenceDate = new Date(a.date + 'T12:00:00');
+                return absenceDate.getFullYear() === year;
+            });
+            
+            const typeCounts = { medical: 0, time_bank: 0, personal: 0 };
+            yearAbsences.forEach(a => {
+                if (a.tipo in typeCounts) {
+                    typeCounts[a.tipo]++;
+                }
+            });
+            pieChartTitle.textContent = `Ausências por Tipo (${year})`;
+            renderPieChart(typeCounts); 
+            
+            // 2. Dados para a Lista (MENSAL)
+            const month = reportDate.getMonth();
+            const monthAbsences = yearAbsences.filter(a => {
+                const absenceDate = new Date(a.date + 'T12:00:00');
+                return absenceDate.getMonth() === month;
+            });
+            
+            const medicalAbsences = monthAbsences.filter(a => a.tipo === 'medical');
+            
+            const medicalCounts = medicalAbsences.reduce((acc, a) => {
+                acc[a.colaborador] = (acc[a.colaborador] || 0) + 1;
+                return acc;
+            }, {});
+            
+            const monthName = reportDate.toLocaleDateString('pt-BR', { month: 'long' });
+            medicalReportTitle.textContent = `Atestados Médicos (${monthName})`;
+            
+            medicalReportList.innerHTML = '';
+            if (Object.keys(medicalCounts).length === 0) {
+                medicalReportList.innerHTML = '<p class="text-gray-500">Nenhum atestado médico registrado neste mês.</p>';
+            } else {
+                const sortedCounts = Object.entries(medicalCounts).sort((a, b) => a[0].localeCompare(b[0]));
+                
+                for (const [colaborador, count] of sortedCounts) {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-2 rounded hover:bg-gray-100';
+                    item.innerHTML = `
+                        <span class="font-medium text-gray-700">${escapeHTML(colaborador)}</span>
+                        <span class="font-bold text-gray-900">${count}</span>
+                    `;
+                    medicalReportList.appendChild(item);
+                }
+            }
+        }
+        
+        /**
+         * Renderiza o gráfico de pizza
+         */
+        function renderPieChart(typeCounts) {
+            if (myPieChart) {
+                myPieChart.destroy();
+            }
+            
+            if (!monthPieChartCanvas) {
+                console.error("Canvas do gráfico não foi encontrado!");
+                return;
+            }
+            const ctx = monthPieChartCanvas.getContext('2d');
+            
+            const total = typeCounts.medical + typeCounts.time_bank + typeCounts.personal;
+            
+            const chartData = {
+                labels: [
+                    `Atestado (${typeCounts.medical})`, 
+                    `Banco de Horas (${typeCounts.time_bank})`, 
+                    `Pessoal (${typeCounts.personal})`
+                ],
+                datasets: [{
+                    label: 'Ausências',
+                    data: [
+                        typeCounts.medical, 
+                        typeCounts.time_bank, 
+                        typeCounts.personal
+                    ],
+                    backgroundColor: [
+                        '#FEE2E2', // red-100
+                        '#DBEAFE', // blue-100
+                        '#FFEDD5'  // orange-100
+                    ],
+                    borderColor: [
+                        '#DC2626', // red-600
+                        '#2563EB', // blue-600
+                        '#EA580C'  // orange-600
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            
+            if (total === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '14px Inter, sans-serif';
+                ctx.fillStyle = '#64748b'; // gray-500
+                ctx.fillText('Nenhum dado de ausência para este ano.', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                ctx.restore();
+                return; 
+            }
+
+            myPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: chartData, 
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter, sans-serif'
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
 
 
+        /**
+         * Esconde o modal de relatório
+         */
+        function hideReportModal() {
+            reportModal.firstElementChild.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                reportModal.classList.add('hidden');
+                if (myPieChart) {
+                    myPieChart.destroy();
+                    myPieChart = null;
+                }
+            }, 150);
+        }
+
         // --- Event Listeners ---
-        prevMonthBtn.addEventListener('click', () => {
+        
+        prevMonthButton.addEventListener('click', () => {
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
         });
-
-        nextMonthBtn.addEventListener('click', () => {
+        
+        nextMonthButton.addEventListener('click', () => {
             currentDate.setMonth(currentDate.getMonth() + 1);
             renderCalendar();
         });
-
-        // Botão "Hoje"
-        todayBtn.addEventListener('click', () => {
-            currentDate = new Date();
-            renderCalendar();
-        });
-
-        closeModalBtn.addEventListener('click', closeModal);
-
-        fullDayCheckbox.addEventListener('change', toggleTimeFields);
-
-        absenceForm.addEventListener('submit', handleFormSubmit);
         
-        eventForm.addEventListener('submit', handleEventFormSubmit);
-        
-        // (NOVOS) Listeners das Abas
-        tabAusenciasBtn.addEventListener('click', () => showTab('ausencias'));
-        tabEventosBtn.addEventListener('click', () => showTab('eventos'));
-
-        // Fecha o modal ao clicar fora da área de conteúdo
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
+        calendarGrid.addEventListener('click', (e) => {
+            const daySquare = e.target.closest('[data-date]');
+            if (daySquare) {
+                openModal(daySquare.dataset.date);
             }
         });
+        
+        closeModal.addEventListener('click', closeModalHandler);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModalHandler();
+            }
+        });
+        
+        diaTodoCheckbox.addEventListener('change', toggleTimeFields);
 
-        // (NOVO) Listener para o botão de fechar a notificação
-        notificationCloseBtn.addEventListener('click', hideNotification);
+        saveAbsenceButton.addEventListener('click', handleSaveAbsence);
+        saveEventButton.addEventListener('click', handleSaveEvent);
+        
+        absencesList.addEventListener('click', handleDeleteAbsence);
+        eventsList.addEventListener('click', handleDeleteEvent);
+        
+        tabAbsences.addEventListener('click', () => showTab('absences'));
+        tabEvents.addEventListener('click', () => showTab('events'));
 
-        // --- Inicialização ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase();
-            // A renderização inicial do calendário é chamada pelo 'setupAbsenceListener'
+        notificationClose.addEventListener('click', hideNotification);
+        
+        adminAccessButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPasswordModal();
+        });
+        cancelPasswordButton.addEventListener('click', hidePasswordModal);
+        submitPasswordButton.addEventListener('click', checkPassword);
+        adminPasswordInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
+        
+        closeReportButton.addEventListener('click', hideReportModal);
+        reportModal.addEventListener('click', (e) => {
+            if (e.target === reportModal) hideReportModal();
+        });
+        
+        reportPrevMonthButton.addEventListener('click', () => {
+            reportDate.setMonth(reportDate.getMonth() - 1);
+            updateReportData();
+        });
+        reportNextMonthButton.addEventListener('click', () => {
+            reportDate.setMonth(reportDate.getMonth() + 1);
+            updateReportData();
         });
 
-    </script>
+        // --- Inicialização ---
+        initializeFirebase();
+        renderCalendar();
+        
+        </script>
+    </div>
 </body>
 </html>
-
 
