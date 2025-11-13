@@ -157,7 +157,6 @@
                             </div>
                         </div>
 
-                        <!-- (NOVO) Campo de Observação -->
                         <div>
                             <label for="observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação (Opcional)</label>
                             <textarea id="observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: Atestado de comparecimento, consulta..."></textarea>
@@ -236,36 +235,57 @@
     <div id="reportModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all scale-95 opacity-0">
             <!-- Cabeçalho -->
-            <div class="p-5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800">Relatório de Ausências</h3>
-                <button id="close-report" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar relatório">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                </button>
+            <div class="p-5 bg-gray-50 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">Relatório de Ausências</h3>
+                    <button id="close-report" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar relatório">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+                <!-- (NOVO) Filtro de Relatório -->
+                <div class="mt-4 flex items-center justify-between space-x-2">
+                    <span class="text-sm font-medium text-gray-700">Filtro do Relatório:</span>
+                    <div class="flex items-center space-x-1">
+                         <button id="report-prev-year" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Ano anterior">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <span id="report-year" class="text-sm font-semibold text-gray-700 w-12 text-center">2024</span>
+                         <button id="report-next-year" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo ano">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                    <select id="report-month-select" class="w-40 border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="-1">Ano Inteiro</option>
+                        <option value="0">Janeiro</option>
+                        <option value="1">Fevereiro</option>
+                        <option value="2">Março</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Maio</option>
+                        <option value="5">Junho</option>
+                        <option value="6">Julho</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Setembro</option>
+                        <option value="9">Outubro</option>
+                        <option value="10">Novembro</option>
+                        <option value="11">Dezembro</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Corpo -->
             <div class="p-6 modal-body" style="max-height: 70vh; overflow-y: auto;">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Gráfico Anual -->
+                    <!-- Gráfico -->
                     <div>
-                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="pie-chart-title">Ausências por Tipo (Ano)</h4>
+                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="pie-chart-title">Ausências por Tipo</h4>
                         <div class="w-full h-64 flex items-center justify-center bg-gray-50 rounded-lg p-4">
                             <canvas id="monthPieChart"></canvas>
                         </div>
                     </div>
                     
-                    <!-- Lista Mensal -->
+                    <!-- Lista -->
                     <div>
-                        <!-- Navegação de Mês do Relatório -->
-                        <div class="flex items-center justify-between mb-2">
-                            <button id="report-prev-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Mês anterior">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                            </button>
-                            <h4 class="text-md font-semibold text-gray-700" id="medical-report-title">Atestados Médicos (Mês)</h4>
-                            <button id="report-next-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo mês">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </button>
-                        </div>
+                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="medical-report-title">Atestados Médicos</h4>
                         <div id="medical-report-list" class="space-y-2 text-sm p-4 bg-gray-50 rounded-lg h-64 overflow-y-auto">
                             <!-- Lista preenchida pelo JS -->
                         </div>
@@ -329,7 +349,7 @@
         var hasNotificationPermission = false; 
         var myPieChart = null;
         const ADMIN_PASSWORD = "paula2025"; 
-        var reportDate = new Date(); 
+        var reportFilterDate = new Date(); // (NOVO) Data para o filtro do relatório
     </script>
     
     <div id="app-script">
@@ -382,7 +402,7 @@
         const timeFieldsContainer = document.getElementById('time-fields');
         const horaInicioInput = document.getElementById('hora-inicio');
         const horaFimInput = document.getElementById('hora-fim');
-        const observacaoInput = document.getElementById('observacao'); // (NOVO)
+        const observacaoInput = document.getElementById('observacao'); 
         
         const saveAbsenceButton = document.getElementById('save-absence');
         const absencesList = document.getElementById('absences-list');
@@ -417,8 +437,12 @@
         const medicalReportList = document.getElementById('medical-report-list');
         const pieChartTitle = document.getElementById('pie-chart-title');
         const medicalReportTitle = document.getElementById('medical-report-title');
-        const reportPrevMonthButton = document.getElementById('report-prev-month');
-        const reportNextMonthButton = document.getElementById('report-next-month');
+        
+        // (NOVOS) Elementos do Filtro de Relatório
+        const reportPrevYearButton = document.getElementById('report-prev-year');
+        const reportNextYearButton = document.getElementById('report-next-year');
+        const reportYearSpan = document.getElementById('report-year');
+        const reportMonthSelect = document.getElementById('report-month-select');
 
         
         /**
@@ -481,15 +505,12 @@
                         return;
                     }
 
-                    // Caminhos das coleções
                     const absenceCollectionPath = `absences`;
                     const eventCollectionPath = `events`;
 
-                    // (CORREÇÃO) Passa a referência diretamente para as funções
                     const absRef = collection(db, absenceCollectionPath);
                     const evtRef = collection(db, eventCollectionPath);
                     
-                    // Armazena globalmente
                     absencesCollectionRef = absRef;
                     eventsCollectionRef = evtRef;
                     
@@ -580,6 +601,7 @@
                 isInitialAbsenceLoad = false;
                 renderCalendar(); 
                 updateModalListsIfOpen(); 
+                updateReportDataIfOpen(); // (NOVO) Atualiza relatório se estiver aberto
 
             }, (error) => {
                 console.error("Erro ao escutar ausências:", error);
@@ -752,7 +774,7 @@
             toggleTimeFields(); 
             horaInicioInput.value = '';
             horaFimInput.value = '';
-            observacaoInput.value = ''; // (NOVO)
+            observacaoInput.value = ''; 
             
             showTab('absences');
             
@@ -798,7 +820,6 @@
                     const item = document.createElement('div');
                     item.className = 'flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200';
                     
-                    // (NOVO) Sanitiza a observação
                     const observacao = absence.observacao ? 
                         `<p class="text-xs text-gray-500 italic mt-1">${escapeHTML(absence.observacao)}</p>` : '';
                     
@@ -841,7 +862,7 @@
         }
         
         /**
-         * (NOVO) Sanitiza HTML para evitar XSS
+         * Sanitiza HTML para evitar XSS
          */
         function escapeHTML(str) {
             return str.replace(/[&<>"']/g, function(m) {
@@ -863,6 +884,15 @@
                 updateModalLists();
             }
         }
+
+        /**
+         * (NOVO) Atualiza o relatório (se estiver aberto)
+         */
+        function updateReportDataIfOpen() {
+            if (!reportModal.classList.contains('hidden')) {
+                updateReportData();
+            }
+        }
         
         /**
          * Retorna o texto legível para o tipo de ausência.
@@ -882,7 +912,7 @@
         async function handleSaveAbsence() {
             const colaborador = colaboradorInput.value.trim();
             const tipo = tipoAusenciaInput.value;
-            const observacao = observacaoInput.value.trim(); // (NOVO)
+            const observacao = observacaoInput.value.trim(); 
             
             if (!colaborador) {
                 alert('Por favor, insira o nome do colaborador.');
@@ -916,7 +946,7 @@
                     isAllDay: diaTodoCheckbox.checked, 
                     startTime: diaTodoCheckbox.checked ? null : horaInicioInput.value,
                     endTime: diaTodoCheckbox.checked ? null : horaFimInput.value,
-                    observacao: observacao, // (NOVO)
+                    observacao: observacao, 
                     createdAt: Timestamp.now(),
                     createdBy: userId 
                 });
@@ -1101,7 +1131,12 @@
          * Mostra o modal de relatório
          */
         function showReportModal() {
-            reportDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            // (NOVO) Define a data do filtro com base no calendário principal
+            reportFilterDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            
+            // (NOVO) Sincroniza os seletores do filtro
+            reportYearSpan.textContent = reportFilterDate.getFullYear();
+            reportMonthSelect.value = reportFilterDate.getMonth();
             
             updateReportData(); 
             
@@ -1112,46 +1147,63 @@
         }
         
         /**
-         * Atualiza os dados do relatório (Gráfico e Lista)
+         * (NOVO) Atualiza os dados do relatório (Gráfico e Lista) baseado no filtro
          */
         function updateReportData() {
-            const year = reportDate.getFullYear();
+            const year = reportFilterDate.getFullYear();
+            const month = parseInt(reportMonthSelect.value, 10); // -1 para "Ano Inteiro"
             
-            // 1. Dados para o Gráfico (ANUAL)
-            const yearAbsences = allAbsences.filter(a => {
-                const absenceDate = new Date(a.date + 'T12:00:00');
-                return absenceDate.getFullYear() === year;
-            });
+            reportYearSpan.textContent = year;
             
+            let periodAbsences = [];
+            let chartTitleText = "";
+            let listTitleText = "";
+            
+            // 1. Filtra os dados pelo período selecionado
+            if (month === -1) { 
+                // Ano Inteiro
+                periodAbsences = allAbsences.filter(a => {
+                    const absenceDate = new Date(a.date + 'T12:00:00');
+                    return absenceDate.getFullYear() === year;
+                });
+                chartTitleText = `Ausências por Tipo (${year})`;
+                listTitleText = `Atestados Médicos (${year})`;
+                
+            } else { 
+                // Mês Específico
+                reportFilterDate.setMonth(month); // Garante que o mês na data do filtro está correto
+                const monthName = reportFilterDate.toLocaleDateString('pt-BR', { month: 'long' });
+                
+                periodAbsences = allAbsences.filter(a => {
+                    const absenceDate = new Date(a.date + 'T12:00:00');
+                    return absenceDate.getFullYear() === year && absenceDate.getMonth() === month;
+                });
+                chartTitleText = `Ausências por Tipo (${monthName}/${year})`;
+                listTitleText = `Atestados Médicos (${monthName}/${year})`;
+            }
+            
+            // 2. Atualiza o Gráfico de Pizza
             const typeCounts = { medical: 0, time_bank: 0, personal: 0 };
-            yearAbsences.forEach(a => {
+            periodAbsences.forEach(a => {
                 if (a.tipo in typeCounts) {
                     typeCounts[a.tipo]++;
                 }
             });
-            pieChartTitle.textContent = `Ausências por Tipo (${year})`;
+            pieChartTitle.textContent = chartTitleText;
             renderPieChart(typeCounts); 
             
-            // 2. Dados para a Lista (MENSAL)
-            const month = reportDate.getMonth();
-            const monthAbsences = yearAbsences.filter(a => {
-                const absenceDate = new Date(a.date + 'T12:00:00');
-                return absenceDate.getMonth() === month;
-            });
-            
-            const medicalAbsences = monthAbsences.filter(a => a.tipo === 'medical');
-            
+            // 3. Atualiza a Lista de Atestados
+            const medicalAbsences = periodAbsences.filter(a => a.tipo === 'medical');
             const medicalCounts = medicalAbsences.reduce((acc, a) => {
                 acc[a.colaborador] = (acc[a.colaborador] || 0) + 1;
                 return acc;
             }, {});
             
-            const monthName = reportDate.toLocaleDateString('pt-BR', { month: 'long' });
-            medicalReportTitle.textContent = `Atestados Médicos (${monthName})`;
-            
+            medicalReportTitle.textContent = listTitleText;
             medicalReportList.innerHTML = '';
+            
             if (Object.keys(medicalCounts).length === 0) {
-                medicalReportList.innerHTML = '<p class="text-gray-500">Nenhum atestado médico registrado neste mês.</p>';
+                medicalReportList.innerHTML = '<p class="text-gray-500">Nenhum atestado médico registrado neste período.</p>';
             } else {
                 const sortedCounts = Object.entries(medicalCounts).sort((a, b) => a[0].localeCompare(b[0]));
                 
@@ -1217,7 +1269,7 @@
                 ctx.textBaseline = 'middle';
                 ctx.font = '14px Inter, sans-serif';
                 ctx.fillStyle = '#64748b'; // gray-500
-                ctx.fillText('Nenhum dado de ausência para este ano.', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                ctx.fillText('Nenhum dado de ausência para este período.', ctx.canvas.width / 2, ctx.canvas.height / 2);
                 ctx.restore();
                 return; 
             }
@@ -1311,12 +1363,16 @@
             if (e.target === reportModal) hideReportModal();
         });
         
-        reportPrevMonthButton.addEventListener('click', () => {
-            reportDate.setMonth(reportDate.getMonth() - 1);
+        // (NOVOS) Listeners do Filtro de Relatório
+        reportPrevYearButton.addEventListener('click', () => {
+            reportFilterDate.setFullYear(reportFilterDate.getFullYear() - 1);
             updateReportData();
         });
-        reportNextMonthButton.addEventListener('click', () => {
-            reportDate.setMonth(reportDate.getMonth() + 1);
+        reportNextYearButton.addEventListener('click', () => {
+            reportFilterDate.setFullYear(reportFilterDate.getFullYear() + 1);
+            updateReportData();
+        });
+        reportMonthSelect.addEventListener('change', () => {
             updateReportData();
         });
 
@@ -1328,4 +1384,5 @@
     </div>
 </body>
 </html>
+
 
