@@ -2,234 +2,315 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Calendário de Ausências</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js (para gráficos) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
         }
         /* Estilos para o "toast" de notificação */
         #notification-toast {
-            transition: opacity 0.5s, transform 0.5s;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
         }
-        /* Estilos para o scrollbar */
-        .modal-body::-webkit-scrollbar {
-            width: 8px;
+        /* Estilos refinados para o scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .modal-body::-webkit-scrollbar-track {
-            background: #f1f5f9; /* gray-100 */
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
         }
-        .modal-body::-webkit-scrollbar-thumb {
-            background: #94a3b8; /* gray-400 */
-            border-radius: 4px;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
         }
-        .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #64748b; /* gray-500 */
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
-        /* Oculta setas em campos input[type=time] */
-        input[type="time"]::-webkit-calendar-picker-indicator {
-            display: none;
+        
+        /* Ajustes específicos para celular */
+        @media (max-width: 640px) {
+            .day-cell {
+                height: 5rem !important; /* Altura menor no mobile */
+                padding: 0.25rem !important;
+            }
+            .day-number {
+                font-size: 0.75rem !important;
+                width: 1.25rem !important;
+                height: 1.25rem !important;
+            }
+            .event-pill {
+                font-size: 0.60rem !important;
+                padding: 0.1rem 0.2rem !important;
+                line-height: 1.1 !important;
+            }
+            /* Esconde o botão flutuante se o teclado abrir para não atrapalhar, opcional */
+        }
+        
+        /* Botão Flutuante (FAB) */
+        .fab-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 40;
+        }
+        .fab-button:hover {
+            transform: scale(1.05);
+        }
+        .fab-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Animação suave para modal */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 200ms, transform 200ms;
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4 lg:p-8 flex items-center justify-center min-h-screen">
+<body class="text-gray-800 antialiased min-h-screen flex flex-col items-center py-4 px-2 sm:p-6 lg:p-8">
 
-    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
-            <h1 class="text-2xl font-bold text-gray-800">Calendário de Ausências do Setor</h1>
-            <p class="mt-1 text-sm text-gray-500">Selecione um dia para adicionar ou visualizar ausências e eventos.</p>
+    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative pb-20 sm:pb-0">
+        
+        <!-- Cabeçalho Profissional -->
+        <div class="bg-white border-b border-gray-100 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+                <img src="https://i.postimg.cc/76mXWMJh/as-02.png" alt="Logo" class="h-12 w-auto object-contain">
+                <div class="hidden sm:block w-px h-10 bg-gray-200 mx-2"></div>
+                <div class="text-center md:text-left">
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">Gestão de Ausências</h1>
+                    <p class="text-xs sm:text-sm text-gray-500 font-medium">Controle de Férias e Escalas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                 <div class="text-xs font-medium px-3 py-1 bg-green-50 text-green-700 rounded-full border border-green-100 flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    Sistema Online
+                 </div>
+            </div>
         </div>
 
-        <!-- Orientações de Uso -->
-        <div class="p-6 bg-blue-50 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-800">Orientações de Uso</h2>
-            <ul class="list-disc list-inside mt-2 text-sm text-blue-700 space-y-1">
-                <li>Sempre que for se ausentar (médico, banco de horas, etc.), clique no dia e adicione sua ausência.</li>
-                <li>Preencha seu nome e o motivo para que todos saibam quem estará fora.</li>
-                <li>Use a aba "Aniversários" para marcar os aniversariantes do mês! 🎂</li>
-            </ul>
+        <!-- Barra de Ferramentas e Navegação -->
+        <div class="bg-gray-50 p-4 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center space-x-4 bg-white rounded-lg shadow-sm p-1 border border-gray-200">
+                <button id="prev-month" class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none transition-colors" aria-label="Mês anterior">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h2 id="month-year" class="text-lg font-bold text-gray-800 w-40 text-center capitalize select-none"></h2>
+                <button id="next-month" class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none transition-colors" aria-label="Próximo mês">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+            
+            <div class="flex gap-2 w-full sm:w-auto justify-center">
+                <button id="btn-legend" class="text-xs font-medium text-gray-500 hover:text-gray-800 flex items-center gap-1 bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Legenda
+                </button>
+            </div>
         </div>
 
-        <!-- Calendário -->
-        <div class="p-6">
-            <!-- Cabeçalho do Calendário (Navegação) -->
-            <div class="flex items-center justify-between mb-4">
-                <button id="prev-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Mês anterior">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-                <h2 id="month-year" class="text-xl font-semibold text-gray-700"></h2>
-                <button id="next-month" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo mês">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </button>
+        <!-- Legenda (Expansível/Oculta) -->
+        <div id="legend-panel" class="hidden bg-white px-6 py-3 border-b border-gray-100 text-xs text-gray-600 flex flex-wrap gap-3 justify-center sm:justify-start">
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-teal-500"></span> Férias</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span> Médico</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Banco de Horas</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500"></span> Pessoal</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Aniversário</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-purple-500"></span> Evento</div>
+        </div>
+
+        <!-- Grade do Calendário -->
+        <div class="p-2 sm:p-6 bg-white">
+            <!-- Header Dias da Semana -->
+            <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Dom</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Seg</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Ter</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Qua</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Qui</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Sex</div>
+                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Sáb</div>
             </div>
 
-            <!-- Dias da Semana (Header) -->
-            <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                <div>DOM</div>
-                <div>SEG</div>
-                <div>TER</div>
-                <div>QUA</div>
-                <div>QUI</div>
-                <div>SEX</div>
-                <div>SÁB</div>
-            </div>
-
-            <!-- Grade de Dias -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-1">
-                <!-- Dias serão preenchidos pelo JavaScript -->
+            <!-- Grid -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr">
+                <!-- Dias gerados via JS -->
             </div>
         </div>
         
-        <!-- Acesso Restrito -->
-        <div class="p-4 bg-gray-50 border-t border-gray-200 text-center">
-            <a href="#" id="admin-access-button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors">Acesso Restrito</a>
+        <!-- Rodapé / Admin -->
+        <div class="bg-gray-50 border-t border-gray-200 p-3 text-center">
+            <a href="#" id="admin-access-button" class="text-xs font-semibold text-gray-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Área Administrativa
+            </a>
         </div>
     </div>
 
-    <!-- Modal de Ausência/Evento (Oculto por padrão) -->
-    <div id="absenceModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-40">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0">
-            <!-- Cabeçalho do Modal -->
-            <div class="p-5 bg-gray-50 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800" id="modal-title">Adicionar em 20 de Nov</h3>
-                    <button id="close-modal" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar modal">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    </button>
+    <!-- Botão Flutuante (FAB) para Adicionar -->
+    <button id="fab-add" class="fab-button bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300" title="Adicionar Novo">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+    </button>
+
+    <!-- Modal Principal (Adicionar/Ver) -->
+    <div id="absenceModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0 duration-300 flex flex-col max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800" id="modal-title">Detalhes do Dia</h3>
+                    <p class="text-xs text-gray-500">Gerencie ausências e eventos.</p>
                 </div>
+                <button id="close-modal" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
-            <!-- Abas (Tabs) -->
-            <div class="border-b border-gray-200 px-5 pt-4">
-                <nav class="flex -mb-px space-x-4 overflow-x-auto">
-                    <button id="tab-absences" class="tab-button whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm text-blue-600 border-blue-600" aria-current="page">
-                        Ausências
-                    </button>
-                    <button id="tab-events" class="tab-button whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
-                        Eventos
-                    </button>
-                    <!-- (NOVA) Aba Aniversários -->
-                    <button id="tab-birthdays" class="tab-button whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
-                        Aniversários
-                    </button>
-                </nav>
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 px-5 bg-white flex-shrink-0">
+                <button id="tab-absences" class="flex-1 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 focus:outline-none transition-colors">Ausências</button>
+                <button id="tab-events" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">Eventos</button>
+                <button id="tab-birthdays" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">Aniversários</button>
             </div>
 
-            <!-- Corpo do Modal (com scroll) -->
-            <div class="p-5 modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <!-- Corpo Modal com Scroll -->
+            <div class="p-5 overflow-y-auto custom-scrollbar flex-1 bg-white">
                 
-                <!-- Conteúdo da Aba: Ausências -->
-                <div id="content-absences" class="tab-content space-y-6">
-                    <!-- Formulário de Nova Ausência -->
-                    <div class="space-y-4">
-                        <h4 class="text-md font-semibold text-gray-700">Adicionar Nova Ausência</h4>
-                        <div>
-                            <label for="colaborador" class="block text-sm font-medium text-gray-700 mb-1">Nome do Colaborador</label>
-                            <input type="text" id="colaborador" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Seu nome">
-                        </div>
-                        <div>
-                            <label for="tipo-ausencia" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ausência</label>
-                            <select id="tipo-ausencia" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="medical">Atestado Médico</option>
-                                <option value="time_bank">Banco de Horas</option>
-                                <option value="personal">Motivo Pessoal</option>
-                            </select>
+                <!-- ABA AUSÊNCIAS -->
+                <div id="content-absences" class="space-y-6">
+                    <!-- Form -->
+                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-blue-800 uppercase tracking-wide">Nova Ausência</h4>
                         </div>
                         
-                        <div class="relative flex items-start">
-                            <div class="flex items-center h-5">
-                                <input id="dia-todo" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <div class="grid grid-cols-1 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Colaborador</label>
+                                <input type="text" id="colaborador" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Nome completo">
                             </div>
-                            <div class="ml-3 text-sm">
-                                <label for="dia-todo" class="font-medium text-gray-700">Dia todo</label>
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Motivo</label>
+                                <select id="tipo-ausencia" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="medical">🏥 Atestado Médico</option>
+                                    <option value="time_bank">⏱️ Banco de Horas</option>
+                                    <option value="personal">🏠 Motivo Pessoal</option>
+                                    <option value="vacation">🏖️ Férias</option>
+                                </select>
                             </div>
                         </div>
 
-                        <div id="time-fields" class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="hora-inicio" class="block text-sm font-medium text-gray-700 mb-1">Hora Início</label>
-                                <input type="time" id="hora-inicio" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <!-- Campos para Férias (Data Início e Fim) -->
+                        <div id="vacation-dates" class="grid grid-cols-2 gap-3 hidden bg-teal-50 p-2 rounded border border-teal-100 mt-2">
+                             <div class="col-span-2 text-xs text-teal-700 font-medium mb-1 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Defina o período das férias:
+                             </div>
+                             <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Data Início</label>
+                                <input type="date" id="data-inicio-ferias" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-teal-500 outline-none">
                             </div>
                             <div>
-                                <label for="hora-fim" class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
-                                <input type="time" id="hora-fim" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Data Final</label>
+                                <input type="date" id="data-fim-ferias" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-teal-500 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Campos para Outras Ausências (Dia todo / Horas) -->
+                        <div id="regular-absence-fields">
+                            <div class="flex items-center mt-2">
+                                <input id="dia-todo" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                                <label for="dia-todo" class="ml-2 text-sm text-gray-700 font-medium cursor-pointer">Dia todo</label>
+                            </div>
+
+                            <div id="time-fields" class="grid grid-cols-2 gap-3 hidden mt-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Início</label>
+                                    <input type="time" id="hora-inicio" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Fim</label>
+                                    <input type="time" id="hora-fim" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 outline-none">
+                                </div>
                             </div>
                         </div>
 
                         <div>
-                            <label for="observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação (Opcional)</label>
-                            <textarea id="observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: Atestado de comparecimento, consulta..."></textarea>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Observação <span class="text-gray-400 font-normal">(Opcional)</span></label>
+                            <textarea id="observacao" rows="2" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
                         </div>
                         
-                        <button id="save-absence" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-semibold shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                            Salvar Ausência
+                        <button id="save-absence" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Confirmar Ausência
                         </button>
                     </div>
 
-                    <!-- Divisor -->
-                    <div class="border-t border-gray-200"></div>
-
-                    <!-- Lista de Ausências do Dia -->
+                    <!-- Lista -->
                     <div>
-                        <h4 class="text-md font-semibold text-gray-700 mb-3">Ausências Registradas</h4>
-                        <div id="absences-list" class="space-y-3">
-                            <!-- Lista preenchida pelo JS -->
-                            <p class="text-sm text-gray-500">Nenhuma ausência registrada para este dia.</p>
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 border-b border-gray-200 pb-1">Registros do Dia Selecionado</h4>
+                        <div id="absences-list" class="space-y-2 min-h-[50px]">
+                            <!-- JS preenche -->
                         </div>
                     </div>
                 </div>
 
-                <!-- Conteúdo da Aba: Eventos -->
-                <div id="content-events" class="tab-content space-y-6 hidden">
-                    <!-- Formulário de Novo Evento -->
-                    <div class="space-y-4">
-                        <h4 class="text-md font-semibold text-gray-700">Adicionar Novo Evento/Feriado</h4>
+                <!-- ABA EVENTOS -->
+                <div id="content-events" class="space-y-6 hidden">
+                    <div class="bg-purple-50/50 p-4 rounded-lg border border-purple-100 space-y-3">
+                         <h4 class="text-sm font-bold text-purple-800 uppercase tracking-wide">Novo Evento</h4>
                         <div>
-                            <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Nome do Evento</label>
-                            <input type="text" id="event-name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: Feriado Municipal, Reunião Geral">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome do Evento / Feriado</label>
+                            <input type="text" id="event-name" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Ex: Feriado Nacional">
                         </div>
-                        <button id="save-event" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md font-semibold shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                        <button id="save-event" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors">
                             Salvar Evento
                         </button>
                     </div>
-
-                    <!-- Divisor -->
-                    <div class="border-t border-gray-200"></div>
-
-                    <!-- Lista de Eventos do Dia -->
                     <div>
-                        <h4 class="text-md font-semibold text-gray-700 mb-3">Eventos Registrados</h4>
-                        <div id="events-list" class="space-y-3">
-                            <!-- Lista preenchida pelo JS -->
-                            <p class="text-sm text-gray-500">Nenhum evento registrado para este dia.</p>
-                        </div>
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 border-b border-gray-200 pb-1">Eventos do Dia</h4>
+                        <div id="events-list" class="space-y-2"></div>
                     </div>
                 </div>
 
-                <!-- (NOVO) Conteúdo da Aba: Aniversários -->
-                <div id="content-birthdays" class="tab-content space-y-6 hidden">
-                    <!-- Formulário de Novo Aniversário -->
-                    <div class="space-y-4">
-                        <h4 class="text-md font-semibold text-gray-700">Adicionar Aniversariante</h4>
+                <!-- ABA ANIVERSÁRIOS -->
+                <div id="content-birthdays" class="space-y-6 hidden">
+                    <div class="bg-pink-50/50 p-4 rounded-lg border border-pink-100 space-y-3">
+                        <h4 class="text-sm font-bold text-pink-800 uppercase tracking-wide">Novo Aniversariante</h4>
                         <div>
-                            <label for="birthday-person" class="block text-sm font-medium text-gray-700 mb-1">Nome do Aniversariante</label>
-                            <input type="text" id="birthday-person" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm" placeholder="Nome do colega">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome</label>
+                            <input type="text" id="birthday-person" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-pink-500 outline-none" placeholder="Nome do aniversariante">
                         </div>
-                        <button id="save-birthday" class="w-full bg-pink-500 text-white py-2 px-4 rounded-md font-semibold shadow-sm hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors">
+                        <button id="save-birthday" class="w-full bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors">
                             Salvar Aniversário 🎂
                         </button>
                     </div>
                     
-                    <div class="bg-pink-50 border border-pink-100 rounded-md p-3">
-                         <p class="text-xs text-pink-800 flex items-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            O aniversariante aparecerá na lista de Eventos.
-                         </p>
+                    <div class="text-center py-4 text-gray-400 text-sm">
+                        <p>Aniversariantes também aparecem na aba de Eventos.</p>
                     </div>
                 </div>
 
@@ -237,83 +318,73 @@
         </div>
     </div>
 
-    <!-- Modal de Senha (Admin) -->
-    <div id="passwordModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 class="text-lg font-semibold text-gray-800">Acesso Restrito</h3>
+    <!-- Modal Senha Admin -->
+    <div id="passwordModal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center p-4 hidden z-[60]">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h3 class="text-lg font-bold text-gray-800">Área Restrita</h3>
             <div>
-                <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                <input type="password" id="admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Senha de Administrador</label>
+                <input type="password" id="admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <p id="password-error" class="text-xs text-red-600 mt-1 hidden">Senha incorreta.</p>
             </div>
-            <div class="flex items-center justify-end space-x-3">
-                <button id="cancel-password" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Cancelar
-                </button>
-                <button id="submit-password" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Entrar
-                </button>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-password" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
+                <button id="submit-password" class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm">Entrar</button>
             </div>
         </div>
     </div>
-    
-    <!-- Modal de Relatório (Admin) -->
-    <div id="reportModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all scale-95 opacity-0">
-            <!-- Cabeçalho -->
-            <div class="p-5 bg-gray-50 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800">Relatório de Ausências</h3>
-                    <button id="close-report" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none" aria-label="Fechar relatório">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    </button>
+
+    <!-- Modal Relatório (Admin) -->
+    <div id="reportModal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center p-4 hidden z-[60]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col transform transition-all scale-95 opacity-0">
+            <div class="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Relatório de Gestão</h3>
+                    <p class="text-sm text-gray-500">Visão geral das ausências e férias</p>
                 </div>
-                <!-- Filtro de Relatório -->
-                <div class="mt-4 flex items-center justify-between space-x-2">
-                    <span class="text-sm font-medium text-gray-700">Filtro do Relatório:</span>
-                    <div class="flex items-center space-x-1">
-                         <button id="report-prev-year" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Ano anterior">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <span id="report-year" class="text-sm font-semibold text-gray-700 w-12 text-center">2024</span>
-                         <button id="report-next-year" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 focus:outline-none" aria-label="Próximo ano">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <select id="report-month-select" class="w-40 border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <option value="-1">Ano Inteiro</option>
-                        <option value="0">Janeiro</option>
-                        <option value="1">Fevereiro</option>
-                        <option value="2">Março</option>
-                        <option value="3">Abril</option>
-                        <option value="4">Maio</option>
-                        <option value="5">Junho</option>
-                        <option value="6">Julho</option>
-                        <option value="7">Agosto</option>
-                        <option value="8">Setembro</option>
-                        <option value="9">Outubro</option>
-                        <option value="10">Novembro</option>
-                        <option value="11">Dezembro</option>
-                    </select>
+                <button id="close-report" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-4 bg-white border-b border-gray-200 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                    <button id="report-prev-year" class="p-1 hover:bg-white rounded shadow-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                    <span id="report-year" class="font-bold text-gray-800 px-2">2024</span>
+                    <button id="report-next-year" class="p-1 hover:bg-white rounded shadow-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
+                <select id="report-month-select" class="border border-gray-300 rounded-md text-sm py-1.5 px-3 focus:ring-blue-500 outline-none">
+                    <option value="-1">📅 Ano Completo</option>
+                    <option value="0">Janeiro</option>
+                    <option value="1">Fevereiro</option>
+                    <option value="2">Março</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Maio</option>
+                    <option value="5">Junho</option>
+                    <option value="6">Julho</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Setembro</option>
+                    <option value="9">Outubro</option>
+                    <option value="10">Novembro</option>
+                    <option value="11">Dezembro</option>
+                </select>
             </div>
 
-            <!-- Corpo -->
-            <div class="p-6 modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Gráfico -->
-                    <div>
-                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="pie-chart-title">Ausências por Tipo</h4>
-                        <div class="w-full h-64 flex items-center justify-center bg-gray-50 rounded-lg p-4">
+                    <!-- Card Gráfico -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <h4 class="text-sm font-bold text-gray-700 mb-4" id="pie-chart-title">Distribuição de Ausências</h4>
+                        <div class="h-64 flex items-center justify-center">
                             <canvas id="monthPieChart"></canvas>
                         </div>
                     </div>
                     
-                    <!-- Lista -->
-                    <div>
-                        <h4 class="text-md font-semibold text-gray-700 mb-2" id="medical-report-title">Atestados Médicos</h4>
-                        <div id="medical-report-list" class="space-y-2 text-sm p-4 bg-gray-50 rounded-lg h-64 overflow-y-auto">
-                            <!-- Lista preenchida pelo JS -->
+                    <!-- Card Lista -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                        <h4 class="text-sm font-bold text-gray-700 mb-4" id="medical-report-title">Detalhamento</h4>
+                        <div id="medical-report-list" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                            <!-- Lista JS -->
                         </div>
                     </div>
                 </div>
@@ -321,48 +392,22 @@
         </div>
     </div>
 
-
-    <!-- Notificação "Toast" (Oculta) -->
-    <div id="notification-toast" class="fixed bottom-5 right-5 w-full max-w-sm bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden z-50 transform translate-x-full opacity-0">
-        <div class="p-4">
-            <div class="flex items-start">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="ml-3 w-0 flex-1 pt-0.5">
-                    <p class="text-sm font-medium text-gray-900" id="notification-title">Nova Atividade!</p>
-                    <p class="mt-1 text-sm text-gray-500" id="notification-message">Um novo item foi adicionado ao calendário.</p>
-                </div>
-                <div class="ml-4 flex-shrink-0 flex">
-                    <button id="notification-close" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <span class="sr-only">Fechar</span>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+    <!-- Toast Notificação -->
+    <div id="notification-toast" class="fixed bottom-4 right-4 max-w-xs w-full bg-white border-l-4 border-blue-500 shadow-xl rounded-r-lg transform translate-x-full opacity-0 pointer-events-none z-[70] flex p-4">
+        <div class="flex-shrink-0">
+             <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         </div>
+        <div class="ml-3 flex-1">
+            <p class="text-sm font-bold text-gray-900" id="notification-title">Notificação</p>
+            <p class="text-sm text-gray-500" id="notification-message">Detalhes...</p>
+        </div>
+        <button id="notification-close" class="ml-2 text-gray-400 hover:text-gray-600"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></button>
     </div>
 
-
-    <!-- Banner de Erro Fatal (Oculto) -->
-    <div id="fatalErrorOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-[9998] hidden">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 text-center">
-            <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro Crítico</h2>
-            <p class="text-gray-600" id="fatalErrorMessage">Ocorreu um erro inesperado e a aplicação não pode continuar.</p>
-        </div>
-    </div>
-
-
-    <!-- Variáveis Globais -->
+    <!-- Script Lógica -->
     <script>
-        var db;
-        var auth;
-        var userId;
+        // Variáveis Globais
+        var db, auth, userId;
         var currentDate = new Date();
         var selectedDateISO; 
         var allAbsences = []; 
@@ -372,7 +417,6 @@
         var notificationTimer;
         var isInitialAbsenceLoad = true; 
         var isInitialEventLoad = true;
-        var hasNotificationPermission = false; 
         var myPieChart = null;
         const ADMIN_PASSWORD = "paula2025"; 
         var reportFilterDate = new Date(); 
@@ -380,28 +424,11 @@
     
     <div id="app-script">
         <script type="module">
-        // Importações do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            query, 
-            where, 
-            onSnapshot, 
-            addDoc, 
-            deleteDoc, 
-            doc,
-            setDoc,
-            Timestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Configuração do Firebase ---
+        // Configuração Firebase (Mantida a original do usuário)
         const firebaseConfig = {
           apiKey: "AIzaSyCe8E7k7vsCRZM9wybNqj7M7UXLpuYcis8",
           authDomain: "calendariodeausencias.firebaseapp.com",
@@ -412,986 +439,485 @@
           measurementId: "G-DGWE7SVBYX"
         };
         
-        // --- Elementos do DOM ---
+        // Elementos DOM
         const calendarGrid = document.getElementById('calendar-grid');
         const monthYear = document.getElementById('month-year');
-        const prevMonthButton = document.getElementById('prev-month');
-        const nextMonthButton = document.getElementById('next-month');
-        
         const modal = document.getElementById('absenceModal');
         const modalTitle = document.getElementById('modal-title');
-        const closeModal = document.getElementById('close-modal');
-        const colaboradorInput = document.getElementById('colaborador');
-        const tipoAusenciaInput = document.getElementById('tipo-ausencia');
         
-        const diaTodoCheckbox = document.getElementById('dia-todo');
-        const timeFieldsContainer = document.getElementById('time-fields');
-        const horaInicioInput = document.getElementById('hora-inicio');
-        const horaFimInput = document.getElementById('hora-fim');
-        const observacaoInput = document.getElementById('observacao'); 
-        
-        const saveAbsenceButton = document.getElementById('save-absence');
-        const absencesList = document.getElementById('absences-list');
-
-        const eventNameInput = document.getElementById('event-name');
-        const saveEventButton = document.getElementById('save-event');
-        const eventsList = document.getElementById('events-list');
-
-        // (NOVO) Elementos de Aniversário
-        const birthdayPersonInput = document.getElementById('birthday-person');
-        const saveBirthdayButton = document.getElementById('save-birthday');
-
-        // Abas
-        const tabAbsences = document.getElementById('tab-absences');
-        const tabEvents = document.getElementById('tab-events');
-        const tabBirthdays = document.getElementById('tab-birthdays'); // (NOVO)
-        
-        const contentAbsences = document.getElementById('content-absences');
-        const contentEvents = document.getElementById('content-events');
-        const contentBirthdays = document.getElementById('content-birthdays'); // (NOVO)
-        
-        const notificationToast = document.getElementById('notification-toast');
-        const notificationTitle = document.getElementById('notification-title');
-        const notificationMessage = document.getElementById('notification-message');
-        const notificationClose = document.getElementById('notification-close');
-
-        const fatalErrorOverlay = document.getElementById('fatalErrorOverlay');
-        const fatalErrorMessage = document.getElementById('fatalErrorMessage');
-
-        const adminAccessButton = document.getElementById('admin-access-button');
-        const passwordModal = document.getElementById('passwordModal');
-        const adminPasswordInput = document.getElementById('admin-password');
-        const cancelPasswordButton = document.getElementById('cancel-password');
-        const submitPasswordButton = document.getElementById('submit-password');
-        const passwordError = document.getElementById('password-error');
-
-        const reportModal = document.getElementById('reportModal');
-        const closeReportButton = document.getElementById('close-report');
-        const monthPieChartCanvas = document.getElementById('monthPieChart');
-        const medicalReportList = document.getElementById('medical-report-list');
-        const pieChartTitle = document.getElementById('pie-chart-title');
-        const medicalReportTitle = document.getElementById('medical-report-title');
-        
-        const reportPrevYearButton = document.getElementById('report-prev-year');
-        const reportNextYearButton = document.getElementById('report-next-year');
-        const reportYearSpan = document.getElementById('report-year');
-        const reportMonthSelect = document.getElementById('report-month-select');
-
-        
-        /**
-         * Inicializa o Firebase
-         */
+        // Inicialização
         async function initializeFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
-                const analytics = getAnalytics(app);
-                
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                setupAuthObserver();
-                await authenticateUser();
-
-            } catch (error) {
-                console.error("Erro ao inicializar Firebase:", error);
-                showFatalError("Falha ao carregar componentes principais. Verifique sua conexão e as configurações do Firebase.");
-            }
-        }
-        
-        /**
-         * Exibe um erro fatal que bloqueia a tela.
-         */
-        function showFatalError(message) {
-            fatalErrorMessage.textContent = message;
-            fatalErrorOverlay.classList.remove('hidden');
-        }
-
-        /**
-         * Autentica o usuário anonimamente.
-         */
-        async function authenticateUser() {
-            try {
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        absencesCollectionRef = collection(db, `absences`);
+                        eventsCollectionRef = collection(db, `events`);
+                        listenToData();
+                    }
+                });
                 await signInAnonymously(auth);
-                console.log("Usuário autenticado anonimamente.");
             } catch (error) {
-                console.error("Erro na autenticação:", error);
-                if (error.code === 'auth/configuration-not-found') {
-                    showFatalError("Erro de Autenticação. O 'Login Anônimo' não está ativado no seu painel do Firebase. Vá em 'Authentication' -> 'Sign-in method' e ative 'Anônimo'.");
-                } else {
-                    showFatalError(`Erro de Autenticação: ${error.message}`);
-                }
+                console.error("Erro Firebase:", error);
+                alert("Erro ao conectar ao sistema. Recarregue a página.");
             }
         }
 
-        /**
-         * Configura o listener do estado de autenticação.
-         */
-        function setupAuthObserver() {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    userId = user.uid;
-                    
-                    if (!db) {
-                        console.error("Observador: 'db' (Firestore) ainda não está pronto!");
-                        showFatalError("A conexão com o banco de dados falhou. Tentando reconectar...");
-                        return;
-                    }
-
-                    const absenceCollectionPath = `absences`;
-                    const eventCollectionPath = `events`;
-
-                    const absRef = collection(db, absenceCollectionPath);
-                    const evtRef = collection(db, eventCollectionPath);
-                    
-                    absencesCollectionRef = absRef;
-                    eventsCollectionRef = evtRef;
-                    
-                    listenToAbsences(absRef);
-                    listenToEvents(evtRef);
-
-                    requestNotificationPermission();
-
-                } else {
-                    userId = null;
-                }
-            });
-        }
-        
-        /**
-         * Pede permissão para Notificações do Navegador
-         */
-        function requestNotificationPermission() {
-            if (!("Notification" in window)) return;
-
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
-        }
-
-        /**
-         * Mostra uma notificação (Toast ou Push)
-         */
-        function notifyNewEntry(title, message, docData) {
-            if (docData.createdBy === userId) return;
-            
-            if (Notification.permission === "granted" && document.hidden) {
-                new Notification(title, {
-                    body: message,
-                    icon: "https://placehold.co/48x48/blue/white?text=!"
-                });
-            } else {
-                showToastNotification(title, message);
-            }
-        }
-
-
-        /**
-         * Escuta mudanças na coleção 'absences'.
-         */
-        function listenToAbsences(refToListen) {
-            if (!refToListen) return;
-
-            const q = query(refToListen); 
-            
-            onSnapshot(q, (snapshot) => {
+        function listenToData() {
+            onSnapshot(query(absencesCollectionRef), (snap) => {
                 allAbsences = [];
-                snapshot.forEach((doc) => {
-                    allAbsences.push({ id: doc.id, ...doc.data() });
-                });
+                snap.forEach(d => allAbsences.push({ id: d.id, ...d.data() }));
                 
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" && !isInitialAbsenceLoad) {
-                        const newAbsence = change.doc.data();
-                        notifyNewEntry(
-                            "Nova Ausência Registrada",
-                            `${newAbsence.colaborador} marcou: ${getAbsenceTypeText(newAbsence.tipo)}`,
-                            newAbsence
-                        );
+                snap.docChanges().forEach((change) => {
+                     if (change.type === "added" && !isInitialAbsenceLoad) {
+                        const d = change.doc.data();
+                        showToast("Nova Ausência", `${d.colaborador}: ${getAbsenceTypeText(d.tipo)}`);
                     }
                 });
-                
                 isInitialAbsenceLoad = false;
-                renderCalendar(); 
-                updateModalListsIfOpen(); 
-                updateReportDataIfOpen(); 
-
-            }, (error) => {
-                console.error("Erro ao escutar ausências:", error);
+                renderCalendar();
+                updateModalListsIfOpen();
+                updateReportDataIfOpen();
             });
-        }
 
-        /**
-         * Escuta mudanças na coleção 'events'.
-         */
-        function listenToEvents(refToListen) {
-            if (!refToListen) return;
-            
-            const q = query(refToListen); 
-            
-            onSnapshot(q, (snapshot) => {
+            onSnapshot(query(eventsCollectionRef), (snap) => {
                 allEvents = [];
-                snapshot.forEach((doc) => {
-                    allEvents.push({ id: doc.id, ...doc.data() });
-                });
-
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" && !isInitialEventLoad) {
-                        const newEvent = change.doc.data();
-                        // (NOVO) Verifica se é aniversário para a mensagem
-                        const msg = newEvent.type === 'birthday' 
-                            ? `Aniversário de ${newEvent.nome}!` 
-                            : `Novo Evento: ${newEvent.nome}`;
-                            
-                        notifyNewEntry("Novidade no Calendário", msg, newEvent);
+                snap.forEach(d => allEvents.push({ id: d.id, ...d.data() }));
+                
+                snap.docChanges().forEach((change) => {
+                     if (change.type === "added" && !isInitialEventLoad) {
+                         const d = change.doc.data();
+                         showToast("Novo Evento", d.type === 'birthday' ? `Aniversário de ${d.nome}!` : d.nome);
                     }
                 });
-
                 isInitialEventLoad = false;
                 renderCalendar();
                 updateModalListsIfOpen();
-
-            }, (error) => {
-                console.error("Erro ao escutar eventos:", error);
             });
         }
 
-
-        /**
-         * Renderiza o calendário para o mês atual.
-         */
         function renderCalendar() {
             calendarGrid.innerHTML = '';
-            
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
             
             monthYear.textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
             
-            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            for (let i = 0; i < firstDayOfMonth; i++) {
-                calendarGrid.appendChild(document.createElement('div'));
+            // Células vazias
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'bg-transparent';
+                calendarGrid.appendChild(empty);
             }
             
+            // Dias
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month, day);
                 const dateISO = date.toISOString().split('T')[0];
+                const isTodayDate = isToday(date);
                 
-                const daySquare = document.createElement('div');
-                daySquare.className = 'relative p-2 h-24 lg:h-32 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-colors flex flex-col overflow-hidden';
-                daySquare.dataset.date = dateISO;
+                const cell = document.createElement('div');
+                // Estilo da célula: responsivo e moderno
+                cell.className = `day-cell relative bg-white border border-gray-100 rounded-lg p-1 sm:p-2 h-20 sm:h-24 lg:h-32 flex flex-col cursor-pointer hover:shadow-md hover:border-blue-200 transition-all overflow-hidden ${isTodayDate ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}`;
+                cell.dataset.date = dateISO;
                 
-                const dayNumber = document.createElement('span');
-                dayNumber.className = 'font-semibold text-sm text-gray-700';
-                dayNumber.textContent = day;
-                
-                if (isToday(date)) {
-                    dayNumber.className = 'flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full font-bold text-sm';
-                    daySquare.classList.add('bg-blue-50');
-                }
-                daySquare.appendChild(dayNumber);
-                
+                const dayNum = document.createElement('span');
+                dayNum.className = `day-number text-xs sm:text-sm font-semibold mb-1 flex items-center justify-center w-6 h-6 rounded-full ${isTodayDate ? 'bg-blue-600 text-white' : 'text-gray-700'}`;
+                dayNum.textContent = day;
+                cell.appendChild(dayNum);
+
                 const pillsContainer = document.createElement('div');
-                pillsContainer.className = 'mt-1.5 space-y-1 overflow-y-auto overflow-x-hidden flex-1';
+                pillsContainer.className = 'flex-1 overflow-y-hidden overflow-x-hidden flex flex-col gap-1';
 
-                const absencesForDay = allAbsences.filter(a => a.date === dateISO);
-                absencesForDay.forEach(absence => {
-                    const pill = createAbsencePill(absence);
-                    pillsContainer.appendChild(pill);
-                });
+                const absences = allAbsences.filter(a => a.date === dateISO);
+                absences.forEach(abs => pillsContainer.appendChild(createAbsencePill(abs)));
 
-                const eventsForDay = allEvents.filter(e => e.date === dateISO);
-                eventsForDay.forEach(event => {
-                    const pill = createEventPill(event);
-                    pillsContainer.appendChild(pill);
-                });
+                const events = allEvents.filter(e => e.date === dateISO);
+                events.forEach(evt => pillsContainer.appendChild(createEventPill(evt)));
                 
-                daySquare.appendChild(pillsContainer);
-                calendarGrid.appendChild(daySquare);
+                cell.appendChild(pillsContainer);
+                calendarGrid.appendChild(cell);
             }
         }
         
-        /**
-         * Cria uma "pílula" de ausência para o calendário.
-         */
-        function createAbsencePill(absence) {
-            const pill = document.createElement('div');
-            let bgColor, textColor, borderColor;
-            
-            switch (absence.tipo) {
-                case 'medical':
-                    bgColor = 'bg-red-100'; textColor = 'text-red-800'; borderColor = 'border-red-300';
-                    break;
-                case 'time_bank':
-                    bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; borderColor = 'border-blue-300';
-                    break;
-                case 'personal':
-                    bgColor = 'bg-orange-100'; textColor = 'text-orange-800'; borderColor = 'border-orange-300';
-                    break;
-                default:
-                    bgColor = 'bg-gray-100'; textColor = 'text-gray-800'; borderColor = 'border-gray-300';
+        function createAbsencePill(abs) {
+            const el = document.createElement('div');
+            let colors = '';
+            // Definição de Cores Profissionais
+            switch (abs.tipo) {
+                case 'medical': colors = 'bg-red-50 text-red-700 border-l-2 border-red-500'; break;
+                case 'time_bank': colors = 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'; break;
+                case 'personal': colors = 'bg-orange-50 text-orange-700 border-l-2 border-orange-500'; break;
+                case 'vacation': colors = 'bg-teal-50 text-teal-700 border-l-2 border-teal-500'; break; // Cor de Férias
+                default: colors = 'bg-gray-100 text-gray-700';
             }
-            
-            pill.className = `w-full text-xs font-medium px-2 py-0.5 rounded-md truncate ${bgColor} ${textColor} border ${borderColor}`;
-            pill.textContent = absence.colaborador; 
-            return pill;
+            el.className = `event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded-r truncate font-medium mb-0.5 ${colors}`;
+            el.textContent = abs.colaborador;
+            return el;
         }
 
-        /**
-         * Cria uma "pílula" de evento para o calendário.
-         */
-        function createEventPill(event) {
-            const pill = document.createElement('div');
-            
-            // (NOVO) Estilo diferente para Aniversário
-            if (event.type === 'birthday') {
-                pill.className = `w-full text-xs font-medium px-2 py-0.5 rounded-md truncate bg-pink-100 text-pink-800 border border-pink-300`;
-                pill.textContent = `🎂 ${event.nome}`;
+        function createEventPill(evt) {
+            const el = document.createElement('div');
+            if (evt.type === 'birthday') {
+                el.className = 'event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded border border-pink-200 bg-pink-50 text-pink-700 truncate font-medium';
+                el.textContent = '🎂 ' + evt.nome;
             } else {
-                pill.className = `w-full text-xs font-medium px-2 py-0.5 rounded-md truncate bg-purple-100 text-purple-800 border border-purple-300`;
-                pill.textContent = event.nome;
+                el.className = 'event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded border border-purple-200 bg-purple-50 text-purple-700 truncate font-medium';
+                el.textContent = evt.nome;
             }
-            return pill;
+            return el;
         }
 
-        /**
-         * Verifica se uma data é "hoje".
-         */
-        function isToday(date) {
-            const today = new Date();
-            return date.getDate() === today.getDate() &&
-                   date.getMonth() === today.getMonth() &&
-                   date.getFullYear() === today.getFullYear();
-        }
-
-        /**
-         * Abre o modal para uma data específica.
-         */
+        // Funções UI
         function openModal(dateISO) {
             selectedDateISO = dateISO;
-            const dateObj = new Date(dateISO + 'T12:00:00'); 
+            const d = new Date(dateISO + 'T12:00:00');
+            modalTitle.textContent = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
             
-            const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
-            modalTitle.textContent = `Atividades para ${formattedDate}`;
+            // Reset inputs
+            document.getElementById('colaborador').value = '';
+            const typeSelect = document.getElementById('tipo-ausencia');
+            typeSelect.value = 'medical'; // Default
             
+            document.getElementById('observacao').value = '';
+            document.getElementById('event-name').value = '';
+            document.getElementById('birthday-person').value = '';
+            document.getElementById('dia-todo').checked = true;
+            
+            // Reset datas férias
+            document.getElementById('data-inicio-ferias').value = dateISO;
+            document.getElementById('data-fim-ferias').value = dateISO;
+
+            toggleTypeFields(); // Atualiza visibilidade baseado no tipo
+
             updateModalLists();
-            
-            colaboradorInput.value = '';
-            tipoAusenciaInput.value = 'medical';
-            eventNameInput.value = '';
-            birthdayPersonInput.value = ''; // (NOVO)
-            
-            diaTodoCheckbox.checked = true; 
-            toggleTimeFields(); 
-            horaInicioInput.value = '';
-            horaFimInput.value = '';
-            observacaoInput.value = ''; 
-            
-            showTab('absences');
+            switchTab('absences');
             
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
+                modal.firstElementChild.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
-        /**
-         * Fecha o modal de ausência.
-         */
         function closeModalHandler() {
+            modal.firstElementChild.classList.remove('scale-100', 'opacity-100');
             modal.firstElementChild.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 150);
+            setTimeout(() => modal.classList.add('hidden'), 200);
         }
-        
-        /**
-         * Mostra/esconde campos de hora baseado no "Dia todo"
-         */
-        function toggleTimeFields() {
-            if (diaTodoCheckbox.checked) {
-                timeFieldsContainer.classList.add('hidden');
-            } else {
-                timeFieldsContainer.classList.remove('hidden');
-            }
+
+        function switchTab(tabId) {
+            ['absences', 'events', 'birthdays'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if (t === tabId) {
+                    btn.className = 'flex-1 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 focus:outline-none transition-colors';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors';
+                    content.classList.add('hidden');
+                }
+            });
         }
-        
-        
-        /**
-         * Atualiza as listas (Ausências e Eventos) dentro do modal.
-         */
+
         function updateModalLists() {
-            // Atualiza lista de ausências
-            const absencesForDay = allAbsences.filter(a => a.date === selectedDateISO);
-            absencesList.innerHTML = '';
-            if (absencesForDay.length === 0) {
-                absencesList.innerHTML = '<p class="text-sm text-gray-500">Nenhuma ausência registrada para este dia.</p>';
-            } else {
-                absencesForDay.forEach(absence => {
-                    const item = document.createElement('div');
-                    item.className = 'flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200';
-                    
-                    const observacao = absence.observacao ? 
-                        `<p class="text-xs text-gray-500 italic mt-1">${escapeHTML(absence.observacao)}</p>` : '';
-                    
-                    const detalhes = absence.detalhes ? 
-                        `<p class="text-sm text-gray-600">${escapeHTML(absence.detalhes)}</p>` : '';
-                    
-                    item.innerHTML = `
-                        <div class="flex-1">
-                            <p class="font-semibold text-sm text-gray-800">${escapeHTML(absence.colaborador)}</p>
-                            <p class="text-sm text-gray-600">${getAbsenceTypeText(absence.tipo)}</p>
-                            ${detalhes}
-                            ${observacao}
+            const listAbs = document.getElementById('absences-list');
+            const listEvt = document.getElementById('events-list');
+            
+            listAbs.innerHTML = '';
+            listEvt.innerHTML = '';
+
+            // Render Ausências
+            const abs = allAbsences.filter(a => a.date === selectedDateISO);
+            if (abs.length === 0) listAbs.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-2">Nada registrado.</p>';
+            
+            abs.forEach(a => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-start p-2 bg-gray-50 rounded border border-gray-100 hover:bg-gray-100 transition-colors';
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                             <span class="font-bold text-sm text-gray-800">${escapeHTML(a.colaborador)}</span>
+                             <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">${getAbsenceTypeText(a.tipo)}</span>
                         </div>
-                        <button data-id="${absence.id}" class="delete-absence flex-shrink-0 ml-2 p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 focus:outline-none" aria-label="Excluir ausência">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                        </button>
-                    `;
-                    absencesList.appendChild(item);
-                });
-            }
+                        <p class="text-xs text-gray-500 mt-0.5">${escapeHTML(a.detalhes || '')}</p>
+                        ${a.observacao ? `<p class="text-xs text-gray-400 italic mt-1">"${escapeHTML(a.observacao)}"</p>` : ''}
+                    </div>
+                    <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${a.id}" data-type="abs"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                `;
+                listAbs.appendChild(div);
+            });
 
-            // Atualiza lista de eventos
-            const eventsForDay = allEvents.filter(e => e.date === selectedDateISO);
-            eventsList.innerHTML = '';
-            if (eventsForDay.length === 0) {
-                eventsList.innerHTML = '<p class="text-sm text-gray-500">Nenhum evento registrado para este dia.</p>';
-            } else {
-                eventsForDay.forEach(event => {
-                    const item = document.createElement('div');
-                    // (NOVO) Estilo condicional para aniversário
-                    if (event.type === 'birthday') {
-                        item.className = 'flex items-center justify-between p-3 bg-pink-50 rounded-lg border border-pink-200';
-                        item.innerHTML = `
-                            <p class="font-semibold text-sm text-pink-800">🎂 ${escapeHTML(event.nome)}</p>
-                            <button data-id="${event.id}" class="delete-event p-1.5 rounded-full text-gray-400 hover:bg-pink-100 hover:text-pink-600 focus:outline-none" aria-label="Excluir evento">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                            </button>
-                        `;
-                    } else {
-                        item.className = 'flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200';
-                        item.innerHTML = `
-                            <p class="font-semibold text-sm text-purple-800">${escapeHTML(event.nome)}</p>
-                            <button data-id="${event.id}" class="delete-event p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 focus:outline-none" aria-label="Excluir evento">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                            </button>
-                        `;
-                    }
-                    eventsList.appendChild(item);
+            // Render Eventos
+            const evts = allEvents.filter(e => e.date === selectedDateISO);
+            if (evts.length === 0) listEvt.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-2">Nada registrado.</p>';
+
+            evts.forEach(e => {
+                const div = document.createElement('div');
+                const isBday = e.type === 'birthday';
+                div.className = `flex justify-between items-center p-2 rounded border transition-colors ${isBday ? 'bg-pink-50 border-pink-100' : 'bg-purple-50 border-purple-100'}`;
+                div.innerHTML = `
+                    <span class="font-semibold text-sm ${isBday ? 'text-pink-800' : 'text-purple-800'}">${isBday ? '🎂 ' : ''}${escapeHTML(e.nome)}</span>
+                    <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${e.id}" data-type="evt"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                `;
+                listEvt.appendChild(div);
+            });
+            
+            // Listeners de Delete
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteItem(btn.dataset.id, btn.dataset.type);
                 });
-            }
+            });
         }
-        
-        /**
-         * Sanitiza HTML para evitar XSS
-         */
+
+        async function deleteItem(id, type) {
+            if(!confirm("Remover este item?")) return;
+            try {
+                if (type === 'abs') await deleteDoc(doc(absencesCollectionRef, id));
+                else await deleteDoc(doc(eventsCollectionRef, id));
+            } catch(e) { console.error(e); alert("Erro ao deletar."); }
+        }
+
+        // Helpers
+        function isToday(d) {
+            const today = new Date();
+            return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+        }
         function escapeHTML(str) {
-            return str.replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[m];
-            });
+            if(!str) return '';
+            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+        function getAbsenceTypeText(t) {
+            const map = { 'vacation': 'Férias', 'medical': 'Atestado', 'time_bank': 'Banco de Horas', 'personal': 'Pessoal' };
+            return map[t] || 'Outro';
         }
         
-        /**
-         * Atualiza o modal (se ele estiver aberto)
-         */
-        function updateModalListsIfOpen() {
-            if (!modal.classList.contains('hidden')) {
-                updateModalLists();
-            }
-        }
+        // Controla a visibilidade dos campos baseado no tipo (Férias vs Normal)
+        function toggleTypeFields() {
+            const type = document.getElementById('tipo-ausencia').value;
+            const vacDiv = document.getElementById('vacation-dates');
+            const regDiv = document.getElementById('regular-absence-fields');
 
-        /**
-         * Atualiza o relatório (se estiver aberto)
-         */
-        function updateReportDataIfOpen() {
-            if (!reportModal.classList.contains('hidden')) {
-                updateReportData();
-            }
-        }
-        
-        /**
-         * Retorna o texto legível para o tipo de ausência.
-         */
-        function getAbsenceTypeText(type) {
-            switch(type) {
-                case 'medical': return 'Atestado Médico';
-                case 'time_bank': return 'Banco de Horas';
-                case 'personal': return 'Motivo Pessoal';
-                default: return 'Outro';
-            }
-        }
-        
-        /**
-         * Salva uma nova ausência no Firestore.
-         */
-        async function handleSaveAbsence() {
-            const colaborador = colaboradorInput.value.trim();
-            const tipo = tipoAusenciaInput.value;
-            const observacao = observacaoInput.value.trim(); 
-            
-            if (!colaborador) {
-                alert('Por favor, insira o nome do colaborador.');
-                return;
-            }
-            
-            let detalhes = "Dia todo";
-            if (!diaTodoCheckbox.checked) {
-                const inicio = horaInicioInput.value;
-                const fim = horaFimInput.value;
-                
-                if (!inicio || !fim) {
-                    alert('Por favor, preencha a Hora Início e a Hora Fim.');
-                    return;
-                }
-                if (fim <= inicio) {
-                    alert('A Hora Fim deve ser maior que a Hora Início.');
-                    return;
-                }
-                detalhes = `Das ${inicio} às ${fim}`;
-            }
-
-            if (!selectedDateISO) return;
-            
-            try {
-                await addDoc(absencesCollectionRef, {
-                    date: selectedDateISO,
-                    colaborador: colaborador,
-                    tipo: tipo,
-                    detalhes: detalhes, 
-                    isAllDay: diaTodoCheckbox.checked, 
-                    startTime: diaTodoCheckbox.checked ? null : horaInicioInput.value,
-                    endTime: diaTodoCheckbox.checked ? null : horaFimInput.value,
-                    observacao: observacao, 
-                    createdAt: Timestamp.now(),
-                    createdBy: userId 
-                });
-                
-                closeModalHandler();
-                
-            } catch (error) {
-                console.error("Erro ao salvar ausência:", error);
-                alert("Erro ao salvar. Tente novamente.");
-            }
-        }
-
-        /**
-         * Salva um novo evento no Firestore.
-         */
-        async function handleSaveEvent() {
-            const nome = eventNameInput.value.trim();
-            
-            if (!nome) {
-                alert('Por favor, insira o nome do evento.');
-                return;
-            }
-            
-            if (!selectedDateISO) return;
-            
-            try {
-                await addDoc(eventsCollectionRef, {
-                    date: selectedDateISO,
-                    nome: nome,
-                    type: 'general', // (NOVO) Define tipo geral
-                    createdAt: Timestamp.now(),
-                    createdBy: userId 
-                });
-                
-                eventNameInput.value = '';
-                closeModalHandler();
-                
-            } catch (error) {
-                console.error("Erro ao salvar evento:", error);
-                alert("Erro ao salvar. Tente novamente.");
-            }
-        }
-
-        /**
-         * (NOVO) Salva um novo aniversário no Firestore (como evento).
-         */
-        async function handleSaveBirthday() {
-            const nome = birthdayPersonInput.value.trim();
-            
-            if (!nome) {
-                alert('Por favor, insira o nome do aniversariante.');
-                return;
-            }
-            
-            if (!selectedDateISO) return;
-            
-            try {
-                await addDoc(eventsCollectionRef, {
-                    date: selectedDateISO,
-                    nome: nome,
-                    type: 'birthday', // (NOVO) Define tipo aniversário
-                    createdAt: Timestamp.now(),
-                    createdBy: userId 
-                });
-                
-                birthdayPersonInput.value = '';
-                closeModalHandler();
-                
-            } catch (error) {
-                console.error("Erro ao salvar aniversário:", error);
-                alert("Erro ao salvar. Tente novamente.");
-            }
-        }
-
-        /**
-         * Deleta uma ausência do Firestore.
-         */
-        async function handleDeleteAbsence(e) {
-            if (!e.target.closest('.delete-absence')) return;
-            const id = e.target.closest('.delete-absence').dataset.id;
-            if (!id) return;
-            
-            if (confirm('Tem certeza que deseja excluir esta ausência?')) {
-                try {
-                    await deleteDoc(doc(absencesCollectionRef, id));
-                } catch (error) {
-                    console.error("Erro ao deletar ausência:", error);
-                    alert("Erro ao deletar. Tente novamente.");
-                }
-            }
-        }
-
-        /**
-         * Deleta um evento do Firestore.
-         */
-        async function handleDeleteEvent(e) {
-            if (!e.target.closest('.delete-event')) return;
-            const id = e.target.closest('.delete-event').dataset.id;
-            if (!id) return;
-            
-            if (confirm('Tem certeza que deseja excluir este item?')) {
-                try {
-                    await deleteDoc(doc(eventsCollectionRef, id));
-                } catch (error) {
-                    console.error("Erro ao deletar evento:", error);
-                    alert("Erro ao deletar. Tente novamente.");
-                }
-            }
-        }
-        
-        /**
-         * Mostra a notificação "toast"
-         */
-        function showToastNotification(title, message) {
-            notificationTitle.textContent = title;
-            notificationMessage.textContent = message;
-            
-            if (notificationTimer) {
-                clearTimeout(notificationTimer);
-            }
-
-            notificationToast.classList.remove('opacity-0', 'translate-x-full');
-            notificationToast.classList.add('opacity-100', 'translate-x-0');
-
-            notificationTimer = setTimeout(() => {
-                hideNotification();
-            }, 5000); 
-        }
-        
-        /**
-         * Esconde a notificação "toast"
-         */
-        function hideNotification() {
-            notificationToast.classList.add('opacity-0');
-            setTimeout(() => {
-                notificationToast.classList.add('translate-x-full');
-            }, 500); 
-        }
-
-
-        /**
-         * Controla a troca de abas no modal
-         */
-        function showTab(tabId) {
-            // Resetar estilos de todos
-            [tabAbsences, tabEvents, tabBirthdays].forEach(btn => {
-                btn.classList.remove('text-blue-600', 'border-blue-600');
-                btn.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-            });
-            [contentAbsences, contentEvents, contentBirthdays].forEach(div => div.classList.add('hidden'));
-
-            // Ativar o selecionado
-            if (tabId === 'absences') {
-                tabAbsences.classList.add('text-blue-600', 'border-blue-600');
-                tabAbsences.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                contentAbsences.classList.remove('hidden');
-            } else if (tabId === 'events') {
-                tabEvents.classList.add('text-blue-600', 'border-blue-600');
-                tabEvents.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                contentEvents.classList.remove('hidden');
-            } else if (tabId === 'birthdays') {
-                tabBirthdays.classList.add('text-blue-600', 'border-blue-600');
-                tabBirthdays.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                contentBirthdays.classList.remove('hidden');
-            }
-        }
-        
-        
-        // --- Funções do Relatório (Admin) ---
-        
-        function showPasswordModal() {
-            adminPasswordInput.value = '';
-            passwordError.classList.add('hidden');
-            passwordModal.classList.remove('hidden');
-        }
-
-        function hidePasswordModal() {
-            passwordModal.classList.add('hidden');
-        }
-
-        function checkPassword() {
-            if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                hidePasswordModal();
-                showReportModal();
+            if (type === 'vacation') {
+                vacDiv.classList.remove('hidden');
+                regDiv.classList.add('hidden');
             } else {
-                passwordError.classList.remove('hidden');
+                vacDiv.classList.add('hidden');
+                regDiv.classList.remove('hidden');
+                toggleTimeFields(); // Re-aplica lógica do checkbox dia todo
             }
         }
-        
-        function showReportModal() {
-            reportFilterDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            reportYearSpan.textContent = reportFilterDate.getFullYear();
-            reportMonthSelect.value = reportFilterDate.getMonth();
-            
-            updateReportData(); 
-            
-            reportModal.classList.remove('hidden');
-            setTimeout(() => {
-                reportModal.firstElementChild.classList.remove('scale-95', 'opacity-0');
-            }, 10);
+
+        function toggleTimeFields() {
+            const chk = document.getElementById('dia-todo');
+            const fields = document.getElementById('time-fields');
+            if(chk.checked) fields.classList.add('hidden');
+            else fields.classList.remove('hidden');
         }
+
+        function updateModalListsIfOpen() { if(!modal.classList.contains('hidden')) updateModalLists(); }
+        function updateReportDataIfOpen() { if(!document.getElementById('reportModal').classList.contains('hidden')) updateReportData(); }
+
+        // --- Salvar Dados ---
+        document.getElementById('save-absence').addEventListener('click', async () => {
+            const colab = document.getElementById('colaborador').value.trim();
+            const type = document.getElementById('tipo-ausencia').value;
+            const obs = document.getElementById('observacao').value.trim();
+            
+            if(!colab) return alert("Nome obrigatório");
+            
+            try {
+                // Lógica de Férias (Múltiplos Dias)
+                if (type === 'vacation') {
+                    const startVal = document.getElementById('data-inicio-ferias').value;
+                    const endVal = document.getElementById('data-fim-ferias').value;
+                    
+                    if(!startVal || !endVal) return alert("Preencha data de início e fim das férias.");
+                    if(startVal > endVal) return alert("A data de início não pode ser maior que a data final.");
+
+                    const startDate = new Date(startVal + 'T12:00:00');
+                    const endDate = new Date(endVal + 'T12:00:00');
+                    
+                    // Loop para criar batch de ausências
+                    const batch = writeBatch(db);
+                    
+                    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                        const iso = d.toISOString().split('T')[0];
+                        const docRef = doc(absencesCollectionRef); // Auto ID
+                        batch.set(docRef, {
+                            date: iso,
+                            colaborador: colab,
+                            tipo: 'vacation',
+                            detalhes: 'Férias',
+                            isAllDay: true, 
+                            startTime: null, 
+                            endTime: null,
+                            observacao: obs,
+                            createdAt: Timestamp.now(), 
+                            createdBy: userId
+                        });
+                    }
+                    
+                    await batch.commit();
+                    showToast("Férias Registradas", `${colab}: ${startVal} até ${endVal}`);
+                    closeModalHandler();
+
+                } else {
+                    // Lógica Normal (Dia Único)
+                    const isAllDay = document.getElementById('dia-todo').checked;
+                    let details = "Dia todo";
+                    let start = null, end = null;
+                    
+                    if (!isAllDay) {
+                        start = document.getElementById('hora-inicio').value;
+                        end = document.getElementById('hora-fim').value;
+                        if(!start || !end) return alert("Horários obrigatórios");
+                        details = `${start} - ${end}`;
+                    }
+
+                    await addDoc(absencesCollectionRef, {
+                        date: selectedDateISO,
+                        colaborador: colab,
+                        tipo: type,
+                        detalhes: details,
+                        isAllDay, startTime: start, endTime: end,
+                        observacao: obs,
+                        createdAt: Timestamp.now(), createdBy: userId
+                    });
+                    closeModalHandler();
+                }
+
+            } catch(e) { console.error(e); alert("Erro ao salvar. Verifique conexão."); }
+        });
+
+        document.getElementById('save-event').addEventListener('click', async () => {
+             const nome = document.getElementById('event-name').value.trim();
+             if(!nome) return alert("Nome obrigatório");
+             await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
+             closeModalHandler();
+        });
         
+        document.getElementById('save-birthday').addEventListener('click', async () => {
+             const nome = document.getElementById('birthday-person').value.trim();
+             if(!nome) return alert("Nome obrigatório");
+             await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
+             closeModalHandler();
+        });
+
+        // --- Notificação ---
+        function showToast(title, msg) {
+            const t = document.getElementById('notification-toast');
+            document.getElementById('notification-title').textContent = title;
+            document.getElementById('notification-message').textContent = msg;
+            t.classList.remove('opacity-0', 'translate-x-full');
+            clearTimeout(notificationTimer);
+            notificationTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-x-full'), 4000);
+        }
+
+        // --- Relatórios ---
         function updateReportData() {
             const year = reportFilterDate.getFullYear();
-            const month = parseInt(reportMonthSelect.value, 10); 
+            const month = parseInt(document.getElementById('report-month-select').value);
+            document.getElementById('report-year').textContent = year;
             
-            reportYearSpan.textContent = year;
-            
-            let periodAbsences = [];
-            let chartTitleText = "";
-            let listTitleText = "";
-            
-            if (month === -1) { 
-                periodAbsences = allAbsences.filter(a => {
-                    const absenceDate = new Date(a.date + 'T12:00:00');
-                    return absenceDate.getFullYear() === year;
-                });
-                chartTitleText = `Ausências por Tipo (${year})`;
-                listTitleText = `Atestados Médicos (${year})`;
-            } else { 
-                reportFilterDate.setMonth(month); 
-                const monthName = reportFilterDate.toLocaleDateString('pt-BR', { month: 'long' });
-                
-                periodAbsences = allAbsences.filter(a => {
-                    const absenceDate = new Date(a.date + 'T12:00:00');
-                    return absenceDate.getFullYear() === year && absenceDate.getMonth() === month;
-                });
-                chartTitleText = `Ausências por Tipo (${monthName}/${year})`;
-                listTitleText = `Atestados Médicos (${monthName}/${year})`;
-            }
-            
-            const typeCounts = { medical: 0, time_bank: 0, personal: 0 };
-            periodAbsences.forEach(a => {
-                if (a.tipo in typeCounts) {
-                    typeCounts[a.tipo]++;
-                }
+            let data = allAbsences.filter(a => {
+                const d = new Date(a.date + 'T12:00:00');
+                return d.getFullYear() === year && (month === -1 || d.getMonth() === month);
             });
-            pieChartTitle.textContent = chartTitleText;
-            renderPieChart(typeCounts); 
             
-            const medicalAbsences = periodAbsences.filter(a => a.tipo === 'medical');
-            const medicalCounts = medicalAbsences.reduce((acc, a) => {
-                acc[a.colaborador] = (acc[a.colaborador] || 0) + 1;
-                return acc;
-            }, {});
+            // Gráfico
+            const counts = { vacation: 0, medical: 0, time_bank: 0, personal: 0 };
+            data.forEach(a => { if(counts[a.tipo] !== undefined) counts[a.tipo]++; });
             
-            medicalReportTitle.textContent = listTitleText;
-            medicalReportList.innerHTML = '';
-            
-            if (Object.keys(medicalCounts).length === 0) {
-                medicalReportList.innerHTML = '<p class="text-gray-500">Nenhum atestado médico registrado neste período.</p>';
-            } else {
-                const sortedCounts = Object.entries(medicalCounts).sort((a, b) => a[0].localeCompare(b[0]));
-                
-                for (const [colaborador, count] of sortedCounts) {
-                    const item = document.createElement('div');
-                    item.className = 'flex justify-between items-center p-2 rounded hover:bg-gray-100';
-                    item.innerHTML = `
-                        <span class="font-medium text-gray-700">${escapeHTML(colaborador)}</span>
-                        <span class="font-bold text-gray-900">${count}</span>
-                    `;
-                    medicalReportList.appendChild(item);
-                }
-            }
-        }
-        
-        function renderPieChart(typeCounts) {
-            if (myPieChart) {
-                myPieChart.destroy();
-            }
-            
-            if (!monthPieChartCanvas) {
-                console.error("Canvas do gráfico não foi encontrado!");
-                return;
-            }
-            const ctx = monthPieChartCanvas.getContext('2d');
-            
-            const total = typeCounts.medical + typeCounts.time_bank + typeCounts.personal;
-            
-            const chartData = {
-                labels: [
-                    `Atestado (${typeCounts.medical})`, 
-                    `Banco de Horas (${typeCounts.time_bank})`, 
-                    `Pessoal (${typeCounts.personal})`
-                ],
-                datasets: [{
-                    label: 'Ausências',
-                    data: [
-                        typeCounts.medical, 
-                        typeCounts.time_bank, 
-                        typeCounts.personal
-                    ],
-                    backgroundColor: [
-                        '#FEE2E2', // red-100
-                        '#DBEAFE', // blue-100
-                        '#FFEDD5'  // orange-100
-                    ],
-                    borderColor: [
-                        '#DC2626', // red-600
-                        '#2563EB', // blue-600
-                        '#EA580C'  // orange-600
-                    ],
-                    borderWidth: 1
-                }]
-            };
-            
-            if (total === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.save();
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.font = '14px Inter, sans-serif';
-                ctx.fillStyle = '#64748b'; 
-                ctx.fillText('Nenhum dado de ausência para este período.', ctx.canvas.width / 2, ctx.canvas.height / 2);
-                ctx.restore();
-                return; 
-            }
-
+            if(myPieChart) myPieChart.destroy();
+            const ctx = document.getElementById('monthPieChart').getContext('2d');
             myPieChart = new Chart(ctx, {
-                type: 'pie',
-                data: chartData, 
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    family: 'Inter, sans-serif'
-                                }
-                            }
-                        }
-                    }
-                }
+                type: 'doughnut',
+                data: {
+                    labels: ['Férias', 'Atestado', 'Banco Hrs', 'Pessoal'],
+                    datasets: [{
+                        data: [counts.vacation, counts.medical, counts.time_bank, counts.personal],
+                        backgroundColor: ['#14b8a6', '#ef4444', '#3b82f6', '#f97316'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Lista Detalhada
+            const list = document.getElementById('medical-report-list');
+            list.innerHTML = '';
+            // Agrupar por pessoa e tipo
+            const grouped = {};
+            data.forEach(a => {
+                const k = `${a.colaborador}||${a.tipo}`;
+                grouped[k] = (grouped[k] || 0) + 1;
+            });
+            
+            if(Object.keys(grouped).length === 0) list.innerHTML = '<p class="text-gray-400 text-sm text-center">Sem dados no período.</p>';
+
+            Object.keys(grouped).sort().forEach(key => {
+                const [name, type] = key.split('||');
+                const count = grouped[key];
+                const div = document.createElement('div');
+                div.className = 'flex justify-between p-2 border-b border-gray-100 last:border-0';
+                div.innerHTML = `<span class="text-sm text-gray-700">${name} <span class="text-xs text-gray-400">(${getAbsenceTypeText(type)})</span></span> <span class="font-bold text-gray-800">${count}</span>`;
+                list.appendChild(div);
             });
         }
 
-
-        function hideReportModal() {
-            reportModal.firstElementChild.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                reportModal.classList.add('hidden');
-                if (myPieChart) {
-                    myPieChart.destroy();
-                    myPieChart = null;
-                }
-            }, 150);
-        }
-
-        // --- Event Listeners ---
-        
-        prevMonthButton.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
+        // Listeners Gerais
+        calendarGrid.addEventListener('click', e => {
+            const cell = e.target.closest('.day-cell');
+            if(cell) openModal(cell.dataset.date);
         });
         
-        nextMonthButton.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
-        
-        calendarGrid.addEventListener('click', (e) => {
-            const daySquare = e.target.closest('[data-date]');
-            if (daySquare) {
-                openModal(daySquare.dataset.date);
-            }
-        });
-        
-        closeModal.addEventListener('click', closeModalHandler);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModalHandler();
-            }
-        });
-        
-        diaTodoCheckbox.addEventListener('change', toggleTimeFields);
-
-        saveAbsenceButton.addEventListener('click', handleSaveAbsence);
-        saveEventButton.addEventListener('click', handleSaveEvent);
-        saveBirthdayButton.addEventListener('click', handleSaveBirthday); // (NOVO)
-        
-        absencesList.addEventListener('click', handleDeleteAbsence);
-        eventsList.addEventListener('click', handleDeleteEvent);
-        
-        tabAbsences.addEventListener('click', () => showTab('absences'));
-        tabEvents.addEventListener('click', () => showTab('events'));
-        tabBirthdays.addEventListener('click', () => showTab('birthdays')); // (NOVO)
-
-        notificationClose.addEventListener('click', hideNotification);
-        
-        adminAccessButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            showPasswordModal();
-        });
-        cancelPasswordButton.addEventListener('click', hidePasswordModal);
-        submitPasswordButton.addEventListener('click', checkPassword);
-        adminPasswordInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') checkPassword();
-        });
-        
-        closeReportButton.addEventListener('click', hideReportModal);
-        reportModal.addEventListener('click', (e) => {
-            if (e.target === reportModal) hideReportModal();
-        });
-        
-        reportPrevYearButton.addEventListener('click', () => {
-            reportFilterDate.setFullYear(reportFilterDate.getFullYear() - 1);
-            updateReportData();
-        });
-        reportNextYearButton.addEventListener('click', () => {
-            reportFilterDate.setFullYear(reportFilterDate.getFullYear() + 1);
-            updateReportData();
-        });
-        reportMonthSelect.addEventListener('change', () => {
-            updateReportData();
+        // Listener do FAB (Botão Novo)
+        document.getElementById('fab-add').addEventListener('click', () => {
+            const todayISO = new Date().toISOString().split('T')[0];
+            openModal(todayISO);
         });
 
-        // --- Inicialização ---
+        document.getElementById('close-modal').addEventListener('click', closeModalHandler);
+        document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(); });
+        document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(); });
+        document.getElementById('dia-todo').addEventListener('change', toggleTimeFields);
+        document.getElementById('tipo-ausencia').addEventListener('change', toggleTypeFields);
+        
+        ['absences', 'events', 'birthdays'].forEach(t => document.getElementById(`tab-${t}`).addEventListener('click', () => switchTab(t)));
+        
+        // Admin Listeners
+        document.getElementById('admin-access-button').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('passwordModal').classList.remove('hidden'); });
+        document.getElementById('cancel-password').addEventListener('click', () => document.getElementById('passwordModal').classList.add('hidden'));
+        document.getElementById('submit-password').addEventListener('click', () => {
+             if(document.getElementById('admin-password').value === ADMIN_PASSWORD) {
+                 document.getElementById('passwordModal').classList.add('hidden');
+                 document.getElementById('reportModal').classList.remove('hidden');
+                 setTimeout(() => { document.getElementById('reportModal').firstElementChild.classList.remove('scale-95', 'opacity-0'); }, 10);
+                 updateReportData();
+             } else { document.getElementById('password-error').classList.remove('hidden'); }
+        });
+        document.getElementById('close-report').addEventListener('click', () => {
+            const rm = document.getElementById('reportModal');
+            rm.firstElementChild.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => rm.classList.add('hidden'), 200);
+        });
+        document.getElementById('report-month-select').addEventListener('change', updateReportData);
+        document.getElementById('report-prev-year').addEventListener('click', () => { reportFilterDate.setFullYear(reportFilterDate.getFullYear()-1); updateReportData(); });
+        document.getElementById('report-next-year').addEventListener('click', () => { reportFilterDate.setFullYear(reportFilterDate.getFullYear()+1); updateReportData(); });
+        document.getElementById('btn-legend').addEventListener('click', () => { document.getElementById('legend-panel').classList.toggle('hidden'); });
+        
         initializeFirebase();
         renderCalendar();
-        
         </script>
     </div>
 </body>
