@@ -51,7 +51,6 @@
                 padding: 0.1rem 0.2rem !important;
                 line-height: 1.1 !important;
             }
-            /* Esconde o botão flutuante se o teclado abrir para não atrapalhar, opcional */
         }
         
         /* Botão Flutuante (FAB) */
@@ -76,15 +75,10 @@
             transform: scale(0.95);
         }
 
-        /* Animação suave para modal */
-        .modal-enter {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .modal-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 200ms, transform 200ms;
+        /* Highlight de Edição */
+        .editing-mode {
+            border: 2px solid #3b82f6 !important;
+            background-color: #eff6ff !important;
         }
     </style>
 </head>
@@ -201,9 +195,11 @@
                 <!-- ABA AUSÊNCIAS -->
                 <div id="content-absences" class="space-y-6">
                     <!-- Form -->
-                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 space-y-3">
+                    <div id="absence-form-container" class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 space-y-3 transition-colors">
                         <div class="flex items-center justify-between">
-                            <h4 class="text-sm font-bold text-blue-800 uppercase tracking-wide">Nova Ausência</h4>
+                            <h4 id="absence-form-title" class="text-sm font-bold text-blue-800 uppercase tracking-wide">Nova Ausência</h4>
+                            <!-- Botão cancelar edição (oculto por padrão) -->
+                            <button id="cancel-edit-absence" class="text-xs text-red-600 hover:text-red-800 font-semibold hidden underline">Cancelar Edição</button>
                         </div>
                         
                         <div class="grid grid-cols-1 gap-3">
@@ -264,8 +260,8 @@
                         </div>
                         
                         <button id="save-absence" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2">
+                            <span id="save-absence-text">Confirmar Ausência</span>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Confirmar Ausência
                         </button>
                     </div>
 
@@ -280,14 +276,17 @@
 
                 <!-- ABA EVENTOS -->
                 <div id="content-events" class="space-y-6 hidden">
-                    <div class="bg-purple-50/50 p-4 rounded-lg border border-purple-100 space-y-3">
-                         <h4 class="text-sm font-bold text-purple-800 uppercase tracking-wide">Novo Evento</h4>
+                    <div id="event-form-container" class="bg-purple-50/50 p-4 rounded-lg border border-purple-100 space-y-3 transition-colors">
+                         <div class="flex items-center justify-between">
+                             <h4 id="event-form-title" class="text-sm font-bold text-purple-800 uppercase tracking-wide">Novo Evento</h4>
+                             <button id="cancel-edit-event" class="text-xs text-red-600 hover:text-red-800 font-semibold hidden underline">Cancelar Edição</button>
+                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Nome do Evento / Feriado</label>
                             <input type="text" id="event-name" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Ex: Feriado Nacional">
                         </div>
                         <button id="save-event" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors">
-                            Salvar Evento
+                            <span id="save-event-text">Salvar Evento</span>
                         </button>
                     </div>
                     <div>
@@ -419,14 +418,18 @@
         var isInitialEventLoad = true;
         var myPieChart = null;
         const ADMIN_PASSWORD = "paula2025"; 
-        var reportFilterDate = new Date(); 
+        var reportFilterDate = new Date();
+        
+        // Estado de Edição
+        var editingAbsenceId = null;
+        var editingEventId = null;
     </script>
     
     <div id="app-script">
         <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, Timestamp, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Configuração Firebase (Mantida a original do usuário)
         const firebaseConfig = {
@@ -581,21 +584,14 @@
             const d = new Date(dateISO + 'T12:00:00');
             modalTitle.textContent = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
             
-            // Reset inputs
-            document.getElementById('colaborador').value = '';
-            const typeSelect = document.getElementById('tipo-ausencia');
-            typeSelect.value = 'medical'; // Default
-            
-            document.getElementById('observacao').value = '';
-            document.getElementById('event-name').value = '';
-            document.getElementById('birthday-person').value = '';
-            document.getElementById('dia-todo').checked = true;
+            resetAbsenceForm();
+            resetEventForm();
             
             // Reset datas férias
             document.getElementById('data-inicio-ferias').value = dateISO;
             document.getElementById('data-fim-ferias').value = dateISO;
 
-            toggleTypeFields(); // Atualiza visibilidade baseado no tipo
+            toggleTypeFields(); 
 
             updateModalLists();
             switchTab('absences');
@@ -611,6 +607,8 @@
             modal.firstElementChild.classList.remove('scale-100', 'opacity-100');
             modal.firstElementChild.classList.add('scale-95', 'opacity-0');
             setTimeout(() => modal.classList.add('hidden'), 200);
+            resetAbsenceForm();
+            resetEventForm();
         }
 
         function switchTab(tabId) {
@@ -625,6 +623,69 @@
                     content.classList.add('hidden');
                 }
             });
+        }
+
+        // Reset Forms
+        function resetAbsenceForm() {
+            editingAbsenceId = null;
+            document.getElementById('absence-form-title').textContent = "Nova Ausência";
+            document.getElementById('save-absence-text').textContent = "Confirmar Ausência";
+            document.getElementById('absence-form-container').classList.remove('editing-mode');
+            document.getElementById('cancel-edit-absence').classList.add('hidden');
+            
+            document.getElementById('colaborador').value = '';
+            document.getElementById('tipo-ausencia').value = 'medical';
+            document.getElementById('observacao').value = '';
+            document.getElementById('dia-todo').checked = true;
+            document.getElementById('hora-inicio').value = '';
+            document.getElementById('hora-fim').value = '';
+            toggleTimeFields();
+            toggleTypeFields();
+        }
+
+        function resetEventForm() {
+            editingEventId = null;
+            document.getElementById('event-form-title').textContent = "Novo Evento";
+            document.getElementById('save-event-text').textContent = "Salvar Evento";
+            document.getElementById('event-form-container').classList.remove('editing-mode');
+            document.getElementById('cancel-edit-event').classList.add('hidden');
+            document.getElementById('event-name').value = '';
+        }
+
+        // Fill Form for Edit
+        function editAbsence(abs) {
+            editingAbsenceId = abs.id;
+            document.getElementById('absence-form-title').textContent = "Editando Ausência";
+            document.getElementById('save-absence-text').textContent = "Atualizar Ausência";
+            document.getElementById('absence-form-container').classList.add('editing-mode');
+            document.getElementById('cancel-edit-absence').classList.remove('hidden');
+            
+            document.getElementById('colaborador').value = abs.colaborador;
+            document.getElementById('tipo-ausencia').value = abs.tipo;
+            document.getElementById('observacao').value = abs.observacao || '';
+            document.getElementById('dia-todo').checked = abs.isAllDay;
+            
+            if (!abs.isAllDay) {
+                document.getElementById('hora-inicio').value = abs.startTime;
+                document.getElementById('hora-fim').value = abs.endTime;
+            }
+            
+            toggleTimeFields();
+            toggleTypeFields();
+            
+            // Focar no formulário (scroll to top do modal content)
+            document.querySelector('.custom-scrollbar').scrollTop = 0;
+        }
+
+        function editEvent(evt) {
+            editingEventId = evt.id;
+            document.getElementById('event-form-title').textContent = "Editando Evento";
+            document.getElementById('save-event-text').textContent = "Atualizar Evento";
+            document.getElementById('event-form-container').classList.add('editing-mode');
+            document.getElementById('cancel-edit-event').classList.remove('hidden');
+            
+            document.getElementById('event-name').value = evt.nome;
+            switchTab('events');
         }
 
         function updateModalLists() {
@@ -650,7 +711,14 @@
                         <p class="text-xs text-gray-500 mt-0.5">${escapeHTML(a.detalhes || '')}</p>
                         ${a.observacao ? `<p class="text-xs text-gray-400 italic mt-1">"${escapeHTML(a.observacao)}"</p>` : ''}
                     </div>
-                    <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${a.id}" data-type="abs"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    <div class="flex items-center">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-1" data-id="${a.id}" data-type="abs" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${a.id}" data-type="abs" title="Excluir">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
                 `;
                 listAbs.appendChild(div);
             });
@@ -665,26 +733,82 @@
                 div.className = `flex justify-between items-center p-2 rounded border transition-colors ${isBday ? 'bg-pink-50 border-pink-100' : 'bg-purple-50 border-purple-100'}`;
                 div.innerHTML = `
                     <span class="font-semibold text-sm ${isBday ? 'text-pink-800' : 'text-purple-800'}">${isBday ? '🎂 ' : ''}${escapeHTML(e.nome)}</span>
-                    <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${e.id}" data-type="evt"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    <div class="flex items-center">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-1" data-id="${e.id}" data-type="evt" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${e.id}" data-type="evt" title="Excluir">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 `;
                 listEvt.appendChild(div);
             });
             
-            // Listeners de Delete
+            // Listeners de Edit e Delete
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteItem(btn.dataset.id, btn.dataset.type);
                 });
             });
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.dataset.id;
+                    const type = btn.dataset.type;
+                    if(type === 'abs') {
+                        const item = allAbsences.find(a => a.id === id);
+                        if(item) editAbsence(item);
+                    } else {
+                        const item = allEvents.find(e => e.id === id);
+                        if(item) editEvent(item);
+                    }
+                });
+            });
         }
 
         async function deleteItem(id, type) {
-            if(!confirm("Remover este item?")) return;
-            try {
-                if (type === 'abs') await deleteDoc(doc(absencesCollectionRef, id));
-                else await deleteDoc(doc(eventsCollectionRef, id));
-            } catch(e) { console.error(e); alert("Erro ao deletar."); }
+            if (type === 'abs') {
+                const item = allAbsences.find(a => a.id === id);
+                if (!item) return;
+
+                // Verificar se faz parte de um grupo (Férias)
+                if (item.groupId) {
+                    if (confirm("Este item faz parte de um grupo de FÉRIAS. Deseja excluir TODOS os dias deste período?")) {
+                        // Deletar em lote
+                        try {
+                            const q = query(absencesCollectionRef, where('groupId', '==', item.groupId));
+                            const snapshot = await getDocs(q);
+                            const batch = writeBatch(db);
+                            snapshot.forEach(doc => {
+                                batch.delete(doc.ref);
+                            });
+                            await batch.commit();
+                            showToast("Férias Excluídas", "Todo o período foi removido.");
+                            return;
+                        } catch (e) {
+                            console.error(e);
+                            alert("Erro ao excluir lote de férias.");
+                            return;
+                        }
+                    } else {
+                        // Se usuário cancelar o lote, perguntar se quer deletar só o dia
+                        if (!confirm("Deseja excluir APENAS este dia específico?")) return;
+                    }
+                } else {
+                    if(!confirm("Remover este item?")) return;
+                }
+
+                try {
+                    await deleteDoc(doc(absencesCollectionRef, id));
+                } catch(e) { console.error(e); alert("Erro ao deletar."); }
+            } else {
+                if(!confirm("Remover este evento?")) return;
+                try {
+                    await deleteDoc(doc(eventsCollectionRef, id));
+                } catch(e) { console.error(e); alert("Erro ao deletar."); }
+            }
         }
 
         // Helpers
@@ -701,19 +825,29 @@
             return map[t] || 'Outro';
         }
         
-        // Controla a visibilidade dos campos baseado no tipo (Férias vs Normal)
+        // Controla a visibilidade dos campos baseado no tipo
         function toggleTypeFields() {
             const type = document.getElementById('tipo-ausencia').value;
             const vacDiv = document.getElementById('vacation-dates');
             const regDiv = document.getElementById('regular-absence-fields');
 
+            // Se estiver editando, não permitimos trocar pra Férias pois mudaria a lógica de datas complexas
+            // Apenas permitimos editar detalhes de um item de férias já existente (sem mudar datas em lote por aqui)
+            
             if (type === 'vacation') {
-                vacDiv.classList.remove('hidden');
-                regDiv.classList.add('hidden');
+                // Se estiver criando novo
+                if (!editingAbsenceId) {
+                    vacDiv.classList.remove('hidden');
+                    regDiv.classList.add('hidden');
+                } else {
+                    // Se estiver editando um item que É férias
+                    vacDiv.classList.add('hidden'); // Esconde datas em lote na edição individual
+                    regDiv.classList.add('hidden'); // Esconde horas pois férias é dia todo
+                }
             } else {
                 vacDiv.classList.add('hidden');
                 regDiv.classList.remove('hidden');
-                toggleTimeFields(); // Re-aplica lógica do checkbox dia todo
+                toggleTimeFields();
             }
         }
 
@@ -727,7 +861,7 @@
         function updateModalListsIfOpen() { if(!modal.classList.contains('hidden')) updateModalLists(); }
         function updateReportDataIfOpen() { if(!document.getElementById('reportModal').classList.contains('hidden')) updateReportData(); }
 
-        // --- Salvar Dados ---
+        // --- Salvar Dados (Create / Update) ---
         document.getElementById('save-absence').addEventListener('click', async () => {
             const colab = document.getElementById('colaborador').value.trim();
             const type = document.getElementById('tipo-ausencia').value;
@@ -736,64 +870,105 @@
             if(!colab) return alert("Nome obrigatório");
             
             try {
-                // Lógica de Férias (Múltiplos Dias)
-                if (type === 'vacation') {
-                    const startVal = document.getElementById('data-inicio-ferias').value;
-                    const endVal = document.getElementById('data-fim-ferias').value;
+                // MODO EDIÇÃO
+                if (editingAbsenceId) {
+                     const isAllDay = document.getElementById('dia-todo').checked;
+                     let details = "Dia todo";
+                     let start = null, end = null;
                     
-                    if(!startVal || !endVal) return alert("Preencha data de início e fim das férias.");
-                    if(startVal > endVal) return alert("A data de início não pode ser maior que a data final.");
-
-                    const startDate = new Date(startVal + 'T12:00:00');
-                    const endDate = new Date(endVal + 'T12:00:00');
-                    
-                    // Loop para criar batch de ausências
-                    const batch = writeBatch(db);
-                    
-                    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                        const iso = d.toISOString().split('T')[0];
-                        const docRef = doc(absencesCollectionRef); // Auto ID
-                        batch.set(docRef, {
-                            date: iso,
-                            colaborador: colab,
-                            tipo: 'vacation',
-                            detalhes: 'Férias',
-                            isAllDay: true, 
-                            startTime: null, 
-                            endTime: null,
-                            observacao: obs,
-                            createdAt: Timestamp.now(), 
-                            createdBy: userId
-                        });
-                    }
-                    
-                    await batch.commit();
-                    showToast("Férias Registradas", `${colab}: ${startVal} até ${endVal}`);
-                    closeModalHandler();
-
-                } else {
-                    // Lógica Normal (Dia Único)
-                    const isAllDay = document.getElementById('dia-todo').checked;
-                    let details = "Dia todo";
-                    let start = null, end = null;
-                    
-                    if (!isAllDay) {
+                     // Se for férias, forçamos dia todo
+                     if (type === 'vacation') {
+                         details = "Férias";
+                     } else if (!isAllDay) {
                         start = document.getElementById('hora-inicio').value;
                         end = document.getElementById('hora-fim').value;
                         if(!start || !end) return alert("Horários obrigatórios");
                         details = `${start} - ${end}`;
-                    }
+                     }
 
-                    await addDoc(absencesCollectionRef, {
-                        date: selectedDateISO,
+                     await updateDoc(doc(absencesCollectionRef, editingAbsenceId), {
                         colaborador: colab,
                         tipo: type,
                         detalhes: details,
-                        isAllDay, startTime: start, endTime: end,
+                        isAllDay: type === 'vacation' ? true : isAllDay,
+                        startTime: start,
+                        endTime: end,
                         observacao: obs,
-                        createdAt: Timestamp.now(), createdBy: userId
-                    });
-                    closeModalHandler();
+                        // Não atualizamos groupId ou data na edição simples para evitar quebra de integridade
+                     });
+                     
+                     resetAbsenceForm(); // Sai do modo edição
+                     showToast("Atualizado", "Registro alterado com sucesso.");
+
+                } 
+                // MODO CRIAÇÃO
+                else {
+                    // Lógica de Férias (Múltiplos Dias)
+                    if (type === 'vacation') {
+                        const startVal = document.getElementById('data-inicio-ferias').value;
+                        const endVal = document.getElementById('data-fim-ferias').value;
+                        
+                        if(!startVal || !endVal) return alert("Preencha data de início e fim das férias.");
+                        if(startVal > endVal) return alert("A data de início não pode ser maior que a data final.");
+
+                        const startDate = new Date(startVal + 'T12:00:00');
+                        const endDate = new Date(endVal + 'T12:00:00');
+                        
+                        // Gerar ID de grupo único para essas férias
+                        const groupId = 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        
+                        const batch = writeBatch(db);
+                        
+                        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                            const iso = d.toISOString().split('T')[0];
+                            const docRef = doc(absencesCollectionRef); 
+                            batch.set(docRef, {
+                                date: iso,
+                                collaborator: colab, // Legacy support check
+                                colaborador: colab,
+                                tipo: 'vacation',
+                                detalhes: 'Férias',
+                                isAllDay: true, 
+                                startTime: null, 
+                                endTime: null,
+                                observacao: obs,
+                                createdAt: Timestamp.now(), 
+                                createdBy: userId,
+                                groupId: groupId // Link para deleção em lote
+                            });
+                        }
+                        
+                        await batch.commit();
+                        showToast("Férias Registradas", `${colab}: ${startVal} até ${endVal}`);
+                        
+                        // Fecha modal se for férias pois gera muitos itens
+                        closeModalHandler();
+
+                    } else {
+                        // Lógica Normal (Dia Único)
+                        const isAllDay = document.getElementById('dia-todo').checked;
+                        let details = "Dia todo";
+                        let start = null, end = null;
+                        
+                        if (!isAllDay) {
+                            start = document.getElementById('hora-inicio').value;
+                            end = document.getElementById('hora-fim').value;
+                            if(!start || !end) return alert("Horários obrigatórios");
+                            details = `${start} - ${end}`;
+                        }
+
+                        await addDoc(absencesCollectionRef, {
+                            date: selectedDateISO,
+                            colaborador: colab,
+                            tipo: type,
+                            detalhes: details,
+                            isAllDay, startTime: start, endTime: end,
+                            observacao: obs,
+                            createdAt: Timestamp.now(), createdBy: userId
+                        });
+                        // Limpa form mas mantém modal aberto para adicionar mais
+                        resetAbsenceForm();
+                    }
                 }
 
             } catch(e) { console.error(e); alert("Erro ao salvar. Verifique conexão."); }
@@ -802,15 +977,34 @@
         document.getElementById('save-event').addEventListener('click', async () => {
              const nome = document.getElementById('event-name').value.trim();
              if(!nome) return alert("Nome obrigatório");
-             await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
-             closeModalHandler();
+             
+             try {
+                 if (editingEventId) {
+                     await updateDoc(doc(eventsCollectionRef, editingEventId), { nome: nome });
+                     resetEventForm();
+                     showToast("Evento Atualizado", nome);
+                 } else {
+                     await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
+                     document.getElementById('event-name').value = '';
+                 }
+             } catch(e) { console.error(e); }
         });
         
         document.getElementById('save-birthday').addEventListener('click', async () => {
              const nome = document.getElementById('birthday-person').value.trim();
              if(!nome) return alert("Nome obrigatório");
              await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
-             closeModalHandler();
+             document.getElementById('birthday-person').value = '';
+        });
+
+        // Cancelar Edição Listeners
+        document.getElementById('cancel-edit-absence').addEventListener('click', (e) => {
+            e.preventDefault();
+            resetAbsenceForm();
+        });
+        document.getElementById('cancel-edit-event').addEventListener('click', (e) => {
+            e.preventDefault();
+            resetEventForm();
         });
 
         // --- Notificação ---
@@ -922,5 +1116,6 @@
     </div>
 </body>
 </html>
+
 
 
