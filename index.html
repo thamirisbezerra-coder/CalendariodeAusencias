@@ -2,436 +2,347 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calendário de Ausências</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Ausências - Doremus</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js (para gráficos) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        /* Estilos para o "toast" de notificação */
-        #notification-toast {
-            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
-        }
-        /* Estilos refinados para o scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background-color: #f4f6f8; /* Fundo cinza bem claro */
         }
         
-        /* Ajustes específicos para celular */
-        @media (max-width: 640px) {
-            .day-cell {
-                height: 5rem !important; /* Altura menor no mobile */
-                padding: 0.25rem !important;
-            }
-            .day-number {
-                font-size: 0.75rem !important;
-                width: 1.25rem !important;
-                height: 1.25rem !important;
-            }
-            .event-pill {
-                font-size: 0.60rem !important;
-                padding: 0.1rem 0.2rem !important;
-                line-height: 1.1 !important;
-            }
-        }
-        
-        /* Botão Flutuante (FAB) */
-        .fab-button {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s, background-color 0.2s;
-            z-index: 40;
-        }
-        .fab-button:hover {
-            transform: scale(1.05);
-        }
-        .fab-button:active {
-            transform: scale(0.95);
-        }
+        /* Scrollbar customizado */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Highlight de Edição */
-        .editing-mode {
-            border: 2px solid #3b82f6 !important;
-            background-color: #eff6ff !important;
+        input[type="time"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+        
+        /* Animação suave */
+        .view-enter { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        .modal-enter { opacity: 0; transform: scale(0.95); transition: opacity 200ms ease-out, transform 200ms ease-out; }
+        .modal-enter-active { opacity: 1; transform: scale(1); }
     </style>
 </head>
-<body class="text-gray-800 antialiased min-h-screen flex flex-col items-center py-4 px-2 sm:p-6 lg:p-8">
+<body class="p-4 lg:p-8 min-h-screen flex flex-col items-center justify-center">
 
-    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative pb-20 sm:pb-0">
+    <!-- ========================================== -->
+    <!-- TELA 1: BOAS VINDAS -->
+    <!-- ========================================== -->
+    <div id="welcome-view" class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-center p-8 space-y-6 view-enter">
+        <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-16 mx-auto object-contain mb-2">
         
-        <!-- Cabeçalho Profissional -->
-        <div class="bg-white border-b border-gray-100 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-                <img src="https://i.postimg.cc/76mXWMJh/as-02.png" alt="Logo" class="h-12 w-auto object-contain">
-                <div class="hidden sm:block w-px h-10 bg-gray-200 mx-2"></div>
-                <div class="text-center md:text-left">
-                    <h1 class="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">Gestão de Ausências</h1>
-                    <p class="text-xs sm:text-sm text-gray-500 font-medium">Controle de Férias e Escalas</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                 <div class="text-xs font-medium px-3 py-1 bg-green-50 text-green-700 rounded-full border border-green-100 flex items-center">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Sistema Online
-                 </div>
-            </div>
-        </div>
-
-        <!-- Barra de Ferramentas e Navegação -->
-        <div class="bg-gray-50 p-4 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-10 shadow-sm">
-            <div class="flex items-center space-x-4 bg-white rounded-lg shadow-sm p-1 border border-gray-200">
-                <button id="prev-month" class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none transition-colors" aria-label="Mês anterior">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-                <h2 id="month-year" class="text-lg font-bold text-gray-800 w-40 text-center capitalize select-none"></h2>
-                <button id="next-month" class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none transition-colors" aria-label="Próximo mês">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </button>
-            </div>
-            
-            <div class="flex gap-2 w-full sm:w-auto justify-center">
-                <button id="btn-legend" class="text-xs font-medium text-gray-500 hover:text-gray-800 flex items-center gap-1 bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Legenda
-                </button>
-            </div>
-        </div>
-
-        <!-- Legenda (Expansível/Oculta) -->
-        <div id="legend-panel" class="hidden bg-white px-6 py-3 border-b border-gray-100 text-xs text-gray-600 flex flex-wrap gap-3 justify-center sm:justify-start">
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-teal-500"></span> Férias</div>
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span> Médico</div>
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Banco de Horas</div>
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500"></span> Pessoal</div>
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Aniversário</div>
-            <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-purple-500"></span> Evento</div>
-        </div>
-
-        <!-- Grade do Calendário -->
-        <div class="p-2 sm:p-6 bg-white">
-            <!-- Header Dias da Semana -->
-            <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Dom</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Seg</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Ter</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Qua</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Qui</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Sex</div>
-                <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Sáb</div>
-            </div>
-
-            <!-- Grid -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr">
-                <!-- Dias gerados via JS -->
-            </div>
-        </div>
+        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Portal de Ausências</h1>
+        <p class="text-gray-500 text-sm">Registre suas ausências, atestados, banco de horas ou informe sobre eventos e aniversários do setor.</p>
         
-        <!-- Rodapé / Admin -->
-        <div class="bg-gray-50 border-t border-gray-200 p-3 text-center">
-            <a href="#" id="admin-access-button" class="text-xs font-semibold text-gray-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Área Administrativa
-            </a>
+        <button id="btn-go-form" class="w-full bg-[#2563eb] text-white py-3.5 px-4 rounded-xl font-bold shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            Preencher Formulário
+        </button>
+
+        <div class="pt-6 border-t border-gray-100 mt-6">
+            <button id="btn-show-admin-login" class="text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2 mx-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Acesso Restrito
+            </button>
         </div>
     </div>
 
-    <!-- Botão Flutuante (FAB) para Adicionar -->
-    <button id="fab-add" class="fab-button bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300" title="Adicionar Novo">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-    </button>
 
-    <!-- Modal Principal (Adicionar/Ver) -->
-    <div id="absenceModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0 duration-300 flex flex-col max-h-[90vh]">
-            <!-- Header Modal -->
-            <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-800" id="modal-title">Detalhes do Dia</h3>
-                    <p class="text-xs text-gray-500">Gerencie ausências e eventos.</p>
+    <!-- ========================================== -->
+    <!-- TELA 2: FORMULÁRIO PÚBLICO -->
+    <!-- ========================================== -->
+    <div id="public-form-view" class="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden view-enter">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-white">
+            <div class="flex items-center gap-3">
+                <button id="btn-back-welcome" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </button>
+                <h2 class="text-lg font-bold text-gray-800">Registrar Atividade</h2>
+            </div>
+            <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-6 w-auto object-contain grayscale opacity-50">
+        </div>
+
+        <div class="p-6 space-y-6">
+            <!-- Seleção de Data -->
+            <div>
+                <label for="public-date" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Data do Registro</label>
+                <input type="date" id="public-date" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition text-gray-800 font-medium">
+            </div>
+
+            <!-- Tipo de Registro -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-form-type="absence" class="public-tab-btn active bg-blue-50 text-blue-700 border border-blue-200 py-2 rounded-lg text-sm font-bold transition shadow-sm">Ausência</button>
+                    <button type="button" data-form-type="event" class="public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">Evento</button>
+                    <button type="button" data-form-type="birthday" class="public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">Aniversário</button>
                 </div>
-                <button id="close-modal" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none transition-colors">
+            </div>
+
+            <!-- Area de Formulários Dinâmicos -->
+            <div id="public-forms-container" class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                <!-- Form Ausência -->
+                <div id="public-form-absence" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Colaborador</label>
+                        <input type="text" id="public-colaborador" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition" placeholder="Nome completo">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Motivo</label>
+                        <select id="public-tipo-ausencia" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition">
+                            <option value="ferias">🌴 Férias</option>
+                            <option value="medical">🩺 Atestado Médico</option>
+                            <option value="time_bank">⏱️ Banco de Horas</option>
+                            <option value="personal">👤 Motivo Pessoal</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                        <input type="checkbox" id="public-diatodo" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="public-diatodo" class="text-sm font-semibold text-gray-700">Ocorrerá o dia todo</label>
+                    </div>
+                    <div id="public-time-fields" class="grid grid-cols-2 gap-3 hidden">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Início</label>
+                            <input type="time" id="public-hora-inicio" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Fim</label>
+                            <input type="time" id="public-hora-fim" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Observação <span class="font-normal text-gray-400">(Opcional)</span></label>
+                        <textarea id="public-observacao" rows="2" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition" placeholder="Detalhes..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Form Evento -->
+                <div id="public-form-event" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Nome do Evento</label>
+                        <input type="text" id="public-event-name" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500" placeholder="Ex: Feriado Nacional">
+                    </div>
+                </div>
+
+                <!-- Form Aniversário -->
+                <div id="public-form-birthday" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Nome do Aniversariante</label>
+                        <input type="text" id="public-birthday-name" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500" placeholder="Nome do colega">
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-submit-public" class="w-full bg-[#16a34a] text-white py-3.5 px-4 rounded-xl font-bold shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                Confirmar e Salvar
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- TELA 3: CALENDÁRIO (ADMIN / RESTRITO) -->
+    <!-- ========================================== -->
+    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[95vh] self-start mt-4">
+        
+        <!-- Cabeçalho (Estilo da Imagem) -->
+        <header class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+            <div class="flex items-center gap-5">
+                <div class="flex items-center">
+                    <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-10 w-auto object-contain">
+                </div>
+                
+                <div class="h-10 w-px bg-gray-200 hidden sm:block"></div>
+                
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800 tracking-tight">Gestão de Ausências</h1>
+                    <p class="text-sm text-gray-500 font-medium mt-0.5">Controle de Férias e Escalas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="bg-green-50 border border-green-100 text-green-600 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]"></span> 
+                    Sistema Online
+                </div>
+                <button id="btn-logout-admin" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition" title="Sair do Modo Admin">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Calendário Principal -->
+        <main class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col min-h-0">
+            
+            <!-- Controles do Mês -->
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                    <button id="prev-month" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div id="month-year" class="px-6 py-2 font-bold text-gray-800 text-sm border-x border-gray-200 min-w-[160px] text-center capitalize">
+                        <!-- Preenchido via JS -->
+                    </div>
+                    <button id="next-month" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                
+                <button class="flex items-center gap-2 border border-gray-200 bg-white px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium shadow-sm transition">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Legenda
+                </button>
+            </div>
+
+            <!-- Dias da Semana -->
+            <div class="grid grid-cols-7 gap-4 text-center mb-2 shrink-0">
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">DOM</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SEG</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">TER</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">QUA</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">QUI</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SEX</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SÁB</div>
+            </div>
+
+            <!-- Grade do Calendário -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-1">
+                <!-- Preenchido via JS -->
+            </div>
+            
+        </main>
+
+        <!-- Botão Flutuante -->
+        <button id="btn-fab-add" class="fixed bottom-8 right-8 w-14 h-14 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center justify-center focus:outline-none z-10" aria-label="Adicionar">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAIS E OVERLAYS -->
+    <!-- ========================================== -->
+
+    <!-- Modal de Senha (Admin Login) -->
+    <div id="passwordModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 space-y-5 modal-enter" id="passwordModalContent">
+            <div class="text-center">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800">Acesso Restrito</h3>
+                <p class="text-sm text-gray-500 mt-1">Insira a senha para ver o calendário.</p>
+            </div>
+            <div>
+                <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-xl tracking-[0.2em] font-mono">
+            </div>
+            <div class="flex items-center gap-3 mt-4 pt-2">
+                <button id="cancel-password" class="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition">Cancelar</button>
+                <button id="submit-password" class="flex-1 py-3 text-sm font-bold text-white bg-[#2563eb] rounded-xl shadow-sm hover:bg-blue-700 transition">Acessar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes do Dia (Admin) -->
+    <div id="dayModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div id="modalContent" class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] modal-enter">
+            
+            <!-- Cabeçalho do Modal -->
+            <div class="px-6 py-5 border-b border-gray-100 flex items-start justify-between bg-white relative z-10">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="modal-date-title">15 de abril de 2026</h3>
+                    <p class="text-sm text-gray-500 mt-0.5 font-medium">Gerencie ausências e eventos.</p>
+                </div>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 p-1.5 rounded-full transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <!-- Tabs -->
-            <div class="flex border-b border-gray-200 px-5 bg-white flex-shrink-0">
-                <button id="tab-absences" class="flex-1 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 focus:outline-none transition-colors">Ausências</button>
-                <button id="tab-events" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">Eventos</button>
-                <button id="tab-birthdays" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">Aniversários</button>
+            <!-- Abas -->
+            <div class="px-6 pt-2 border-b border-gray-100 bg-white">
+                <div class="flex space-x-6">
+                    <button class="modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb]" data-tab="absences">Ausências</button>
+                    <button class="modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="events">Eventos</button>
+                    <button class="modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="birthdays">Aniversários</button>
+                </div>
             </div>
 
-            <!-- Corpo Modal com Scroll -->
-            <div class="p-5 overflow-y-auto custom-scrollbar flex-1 bg-white">
+            <!-- Corpo do Modal com Scroll -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white space-y-8">
                 
-                <!-- ABA AUSÊNCIAS -->
-                <div id="content-absences" class="space-y-6">
-                    <!-- Form -->
-                    <div id="absence-form-container" class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 space-y-3 transition-colors">
-                        <div class="flex items-center justify-between">
-                            <h4 id="absence-form-title" class="text-sm font-bold text-blue-800 uppercase tracking-wide">Nova Ausência</h4>
-                            <!-- Botão cancelar edição (oculto por padrão) -->
-                            <button id="cancel-edit-absence" class="text-xs text-red-600 hover:text-red-800 font-semibold hidden underline">Cancelar Edição</button>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Colaborador</label>
-                                <input type="text" id="colaborador" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Nome completo">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Motivo</label>
-                                <select id="tipo-ausencia" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="medical">🏥 Atestado Médico</option>
-                                    <option value="time_bank">⏱️ Banco de Horas</option>
-                                    <option value="personal">🏠 Motivo Pessoal</option>
-                                    <option value="vacation">🏖️ Férias</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Campos para Férias (Data Início e Fim) -->
-                        <div id="vacation-dates" class="grid grid-cols-2 gap-3 hidden bg-teal-50 p-2 rounded border border-teal-100 mt-2">
-                             <div class="col-span-2 text-xs text-teal-700 font-medium mb-1 flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Defina o período das férias:
-                             </div>
-                             <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Data Início</label>
-                                <input type="date" id="data-inicio-ferias" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-teal-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Data Final</label>
-                                <input type="date" id="data-fim-ferias" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-teal-500 outline-none">
-                            </div>
-                        </div>
-
-                        <!-- Campos para Outras Ausências (Dia todo / Horas) -->
-                        <div id="regular-absence-fields">
-                            <div class="flex items-center mt-2">
-                                <input id="dia-todo" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
-                                <label for="dia-todo" class="ml-2 text-sm text-gray-700 font-medium cursor-pointer">Dia todo</label>
-                            </div>
-
-                            <div id="time-fields" class="grid grid-cols-2 gap-3 hidden mt-2">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Início</label>
-                                    <input type="time" id="hora-inicio" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Fim</label>
-                                    <input type="time" id="hora-fim" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 outline-none">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Observação <span class="text-gray-400 font-normal">(Opcional)</span></label>
-                            <textarea id="observacao" rows="2" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
-                        </div>
-                        
-                        <button id="save-absence" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2">
-                            <span id="save-absence-text">Confirmar Ausência</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </button>
-                    </div>
-
-                    <!-- Lista -->
-                    <div>
-                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 border-b border-gray-200 pb-1">Registros do Dia Selecionado</h4>
-                        <div id="absences-list" class="space-y-2 min-h-[50px]">
-                            <!-- JS preenche -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ABA EVENTOS -->
-                <div id="content-events" class="space-y-6 hidden">
-                    <div id="event-form-container" class="bg-purple-50/50 p-4 rounded-lg border border-purple-100 space-y-3 transition-colors">
-                         <div class="flex items-center justify-between">
-                             <h4 id="event-form-title" class="text-sm font-bold text-purple-800 uppercase tracking-wide">Novo Evento</h4>
-                             <button id="cancel-edit-event" class="text-xs text-red-600 hover:text-red-800 font-semibold hidden underline">Cancelar Edição</button>
-                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome do Evento / Feriado</label>
-                            <input type="text" id="event-name" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Ex: Feriado Nacional">
-                        </div>
-                        <button id="save-event" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors">
-                            <span id="save-event-text">Salvar Evento</span>
-                        </button>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 border-b border-gray-200 pb-1">Eventos do Dia</h4>
-                        <div id="events-list" class="space-y-2"></div>
-                    </div>
-                </div>
-
-                <!-- ABA ANIVERSÁRIOS -->
-                <div id="content-birthdays" class="space-y-6 hidden">
-                    <div class="bg-pink-50/50 p-4 rounded-lg border border-pink-100 space-y-3">
-                        <h4 class="text-sm font-bold text-pink-800 uppercase tracking-wide">Novo Aniversariante</h4>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome</label>
-                            <input type="text" id="birthday-person" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-pink-500 outline-none" placeholder="Nome do aniversariante">
-                        </div>
-                        <button id="save-birthday" class="w-full bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-sm transition-colors">
-                            Salvar Aniversário 🎂
-                        </button>
-                    </div>
+                <!-- SESSÃO DE FORMULÁRIO RÁPIDO (Apenas Visual Admin) -->
+                <div id="form-section">
+                    <h4 class="text-xs font-bold text-[#2563eb] tracking-widest uppercase mb-4" id="form-title">Nova Ausência</h4>
                     
-                    <div class="text-center py-4 text-gray-400 text-sm">
-                        <p>Aniversariantes também aparecem na aba de Eventos.</p>
+                    <div id="admin-form-absences" class="space-y-4 admin-form-content">
+                        <div>
+                            <input type="text" id="admin-colaborador" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Nome completo">
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="admin-motivo" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500">
+                                <option value="ferias">Férias</option><option value="medical">Atestado</option>
+                                <option value="time_bank">Banco Horas</option><option value="personal">Pessoal</option>
+                            </select>
+                            <button id="btn-save-admin-absence" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
+                        </div>
+                    </div>
+
+                    <div id="admin-form-events" class="space-y-4 admin-form-content hidden flex gap-2">
+                        <input type="text" id="admin-evento" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Nome do Evento">
+                        <button id="btn-save-admin-event" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
+                    </div>
+
+                    <div id="admin-form-birthdays" class="space-y-4 admin-form-content hidden flex gap-2">
+                        <input type="text" id="admin-aniversariante" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Aniversariante">
+                        <button id="btn-save-admin-birthday" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
                     </div>
                 </div>
 
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Senha Admin -->
-    <div id="passwordModal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center p-4 hidden z-[60]">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
-            <h3 class="text-lg font-bold text-gray-800">Área Restrita</h3>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Senha de Administrador</label>
-                <input type="password" id="admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <p id="password-error" class="text-xs text-red-600 mt-1 hidden">Senha incorreta.</p>
-            </div>
-            <div class="flex justify-end space-x-2">
-                <button id="cancel-password" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
-                <button id="submit-password" class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm">Entrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Relatório (Admin) -->
-    <div id="reportModal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center p-4 hidden z-[60]">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col transform transition-all scale-95 opacity-0">
-            <div class="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <!-- SESSÃO DE LISTAGEM -->
                 <div>
-                    <h3 class="text-xl font-bold text-gray-800">Relatório de Gestão</h3>
-                    <p class="text-sm text-gray-500">Visão geral das ausências e férias</p>
+                    <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3 border-b border-gray-100 pb-2">Registros do dia selecionado</h4>
+                    <p class="text-sm text-gray-400 py-4 text-center italic" id="empty-state">Nenhum registro para este dia.</p>
+                    <div id="records-list" class="space-y-0"></div>
                 </div>
-                <button id="close-report" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <div class="p-4 bg-white border-b border-gray-200 flex flex-wrap gap-4 items-center justify-between">
-                <div class="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-                    <button id="report-prev-year" class="p-1 hover:bg-white rounded shadow-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                    <span id="report-year" class="font-bold text-gray-800 px-2">2024</span>
-                    <button id="report-next-year" class="p-1 hover:bg-white rounded shadow-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
-                </div>
-                <select id="report-month-select" class="border border-gray-300 rounded-md text-sm py-1.5 px-3 focus:ring-blue-500 outline-none">
-                    <option value="-1">📅 Ano Completo</option>
-                    <option value="0">Janeiro</option>
-                    <option value="1">Fevereiro</option>
-                    <option value="2">Março</option>
-                    <option value="3">Abril</option>
-                    <option value="4">Maio</option>
-                    <option value="5">Junho</option>
-                    <option value="6">Julho</option>
-                    <option value="7">Agosto</option>
-                    <option value="8">Setembro</option>
-                    <option value="9">Outubro</option>
-                    <option value="10">Novembro</option>
-                    <option value="11">Dezembro</option>
-                </select>
-            </div>
 
-            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Card Gráfico -->
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <h4 class="text-sm font-bold text-gray-700 mb-4" id="pie-chart-title">Distribuição de Ausências</h4>
-                        <div class="h-64 flex items-center justify-center">
-                            <canvas id="monthPieChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- Card Lista -->
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                        <h4 class="text-sm font-bold text-gray-700 mb-4" id="medical-report-title">Detalhamento</h4>
-                        <div id="medical-report-list" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            <!-- Lista JS -->
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notificação -->
-    <div id="notification-toast" class="fixed bottom-4 right-4 max-w-xs w-full bg-white border-l-4 border-blue-500 shadow-xl rounded-r-lg transform translate-x-full opacity-0 pointer-events-none z-[70] flex p-4">
-        <div class="flex-shrink-0">
-             <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <!-- Notificação "Toast" -->
+    <div id="notification-toast" class="fixed bottom-5 right-5 w-full max-w-sm bg-white shadow-xl rounded-2xl border border-gray-100 pointer-events-auto overflow-hidden z-[100] transform translate-y-full opacity-0 transition-all duration-300">
+        <div class="p-4 flex items-start gap-3">
+            <div class="flex-shrink-0 mt-0.5">
+                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-bold text-gray-900" id="notification-title">Aviso</p>
+                <p class="text-sm text-gray-500" id="notification-message">Operação realizada.</p>
+            </div>
         </div>
-        <div class="ml-3 flex-1">
-            <p class="text-sm font-bold text-gray-900" id="notification-title">Notificação</p>
-            <p class="text-sm text-gray-500" id="notification-message">Detalhes...</p>
-        </div>
-        <button id="notification-close" class="ml-2 text-gray-400 hover:text-gray-600"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></button>
     </div>
 
-    <!-- Script Lógica -->
-    <script>
-        // Variáveis Globais
-        var db, auth, userId;
-        var currentDate = new Date();
-        var selectedDateISO; 
-        var allAbsences = []; 
-        var allEvents = []; 
-        var absencesCollectionRef; 
-        var eventsCollectionRef; 
-        var notificationTimer;
-        var isInitialAbsenceLoad = true; 
-        var isInitialEventLoad = true;
-        var myPieChart = null;
-        const ADMIN_PASSWORD = "paula2025"; 
-        var reportFilterDate = new Date();
-        
-        // Estado de Edição
-        var editingAbsenceId = null;
-        var editingEventId = null;
-    </script>
-    
-    <div id="app-script">
-        <script type="module">
+
+    <!-- ========================================== -->
+    <!-- SCRIPTS E LÓGICA FIREBASE -->
+    <!-- ========================================== -->
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, Timestamp, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuração Firebase (Mantida a original do usuário)
+        // CONFIGURAÇÃO ORIGINAL DO SEU BANCO DE DADOS (Para manter os dados antigos)
         const firebaseConfig = {
           apiKey: "AIzaSyCe8E7k7vsCRZM9wybNqj7M7UXLpuYcis8",
           authDomain: "calendariodeausencias.firebaseapp.com",
@@ -442,678 +353,395 @@
           measurementId: "G-DGWE7SVBYX"
         };
         
-        // Elementos DOM
-        const calendarGrid = document.getElementById('calendar-grid');
-        const monthYear = document.getElementById('month-year');
-        const modal = document.getElementById('absenceModal');
-        const modalTitle = document.getElementById('modal-title');
+        let db, auth, userId;
+        let absencesRef, eventsRef;
+        let allAbsences = [], allEvents = [];
         
-        // Inicialização
-        async function initializeFirebase() {
+        // Estado
+        let currentDate = new Date();
+        let selectedDateISO = null;
+        let currentPublicTab = 'absence';
+        let currentAdminTab = 'absences';
+        const ADMIN_PASSWORD = "paula2025"; 
+
+        // Dicionário de Tipos para UI
+        const typeConfig = {
+            'ferias': { label: 'Férias', pillColor: 'border-[#14b8a6] text-[#0f766e] bg-[#f0fdfa]' }, // Teal
+            'medical': { label: 'Atestado', pillColor: 'border-[#ef4444] text-[#b91c1c] bg-[#fef2f2]' }, // Red
+            'time_bank': { label: 'Banco Horas', pillColor: 'border-[#3b82f6] text-[#1d4ed8] bg-[#eff6ff]' }, // Blue
+            'personal': { label: 'Pessoal', pillColor: 'border-[#f97316] text-[#c2410c] bg-[#fff7ed]' }, // Orange
+            'general': { label: 'Evento', pillColor: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple (Old config compatibility)
+            'event': { label: 'Evento', pillColor: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple
+            'birthday': { label: 'Aniversário', pillColor: 'border-[#ec4899] text-[#be185d] bg-[#fdf2f8]' } // Pink
+        };
+
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+        // Elementos DOM - Views
+        const views = {
+            welcome: document.getElementById('welcome-view'),
+            publicForm: document.getElementById('public-form-view'),
+            calendar: document.getElementById('calendar-view')
+        };
+
+        // Init Firebase
+        async function initFirebase() {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
             try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        absencesCollectionRef = collection(db, `absences`);
-                        eventsCollectionRef = collection(db, `events`);
-                        listenToData();
-                    }
-                });
                 await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Erro Firebase:", error);
-                alert("Erro ao conectar ao sistema. Recarregue a página.");
+            } catch (e) { console.error("Auth error:", e); showToast("Erro", "Falha na conexão com servidor."); }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    // COLEÇÕES ORIGINAIS
+                    absencesRef = collection(db, 'absences');
+                    eventsRef = collection(db, 'events');
+                    
+                    onSnapshot(query(absencesRef), (snap) => {
+                        allAbsences = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderCalendar();
+                        if(!document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
+                    });
+                    
+                    onSnapshot(query(eventsRef), (snap) => {
+                        allEvents = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderCalendar();
+                        if(!document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
+                    });
+                }
+            });
+        }
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function switchView(viewName) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            views[viewName].classList.remove('hidden');
+            // Remove a classe do body que centraliza verticalmente se for pro calendário
+            if (viewName === 'calendar') document.body.classList.replace('justify-center', 'justify-start');
+            else { document.body.classList.replace('justify-start', 'justify-center'); document.body.classList.add('justify-center'); }
+        }
+
+        document.getElementById('btn-go-form').addEventListener('click', () => {
+            switchView('publicForm');
+            document.getElementById('public-date').value = new Date().toISOString().split('T')[0];
+        });
+        document.getElementById('btn-back-welcome').addEventListener('click', () => switchView('welcome'));
+        document.getElementById('btn-logout-admin').addEventListener('click', () => switchView('welcome'));
+
+        // --- LOGIN ADMIN ---
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordContent = document.getElementById('passwordModalContent');
+        
+        document.getElementById('btn-show-admin-login').addEventListener('click', () => {
+            document.getElementById('admin-password').value = '';
+            passwordModal.classList.remove('hidden');
+            setTimeout(() => {
+                passwordContent.classList.add('modal-enter-active');
+                document.getElementById('admin-password').focus();
+            }, 10);
+        });
+
+        function closePasswordModal() {
+            passwordContent.classList.remove('modal-enter-active');
+            setTimeout(() => passwordModal.classList.add('hidden'), 200);
+        }
+        document.getElementById('cancel-password').addEventListener('click', closePasswordModal);
+
+        function checkAdminPassword() {
+            if (document.getElementById('admin-password').value === ADMIN_PASSWORD) {
+                closePasswordModal();
+                switchView('calendar');
+                renderCalendar();
+            } else {
+                showToast("Erro", "Senha incorreta.");
+                document.getElementById('admin-password').value = '';
             }
         }
+        document.getElementById('submit-password').addEventListener('click', checkAdminPassword);
+        document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') checkAdminPassword(); });
 
-        function listenToData() {
-            onSnapshot(query(absencesCollectionRef), (snap) => {
-                allAbsences = [];
-                snap.forEach(d => allAbsences.push({ id: d.id, ...d.data() }));
-                
-                snap.docChanges().forEach((change) => {
-                     if (change.type === "added" && !isInitialAbsenceLoad) {
-                        const d = change.doc.data();
-                        showToast("Nova Ausência", `${d.colaborador}: ${getAbsenceTypeText(d.tipo)}`);
-                    }
+        // --- LÓGICA DO FORMULÁRIO PÚBLICO ---
+        document.querySelectorAll('.public-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.public-tab-btn').forEach(b => {
+                    b.className = "public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm";
                 });
-                isInitialAbsenceLoad = false;
-                renderCalendar();
-                updateModalListsIfOpen();
-                updateReportDataIfOpen();
-            });
-
-            onSnapshot(query(eventsCollectionRef), (snap) => {
-                allEvents = [];
-                snap.forEach(d => allEvents.push({ id: d.id, ...d.data() }));
+                btn.className = "public-tab-btn active bg-blue-50 text-blue-700 border border-blue-200 py-2 rounded-lg text-sm font-bold transition shadow-sm";
                 
-                snap.docChanges().forEach((change) => {
-                     if (change.type === "added" && !isInitialEventLoad) {
-                         const d = change.doc.data();
-                         showToast("Novo Evento", d.type === 'birthday' ? `Aniversário de ${d.nome}!` : d.nome);
-                    }
-                });
-                isInitialEventLoad = false;
-                renderCalendar();
-                updateModalListsIfOpen();
+                currentPublicTab = btn.dataset.formType;
+                document.getElementById('public-form-absence').classList.add('hidden');
+                document.getElementById('public-form-event').classList.add('hidden');
+                document.getElementById('public-form-birthday').classList.add('hidden');
+                document.getElementById(`public-form-${currentPublicTab}`).classList.remove('hidden');
             });
-        }
+        });
 
+        document.getElementById('public-diatodo').addEventListener('change', (e) => {
+            document.getElementById('public-time-fields').classList.toggle('hidden', e.target.checked);
+        });
+
+        document.getElementById('btn-submit-public').addEventListener('click', async () => {
+            if (!userId) return showToast("Aguarde", "Conectando ao servidor...");
+            const dateVal = document.getElementById('public-date').value;
+            if (!dateVal) return showToast("Aviso", "Selecione a data.");
+
+            const btn = document.getElementById('btn-submit-public');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Salvando..."; btn.disabled = true;
+
+            try {
+                if (currentPublicTab === 'absence') {
+                    const nome = document.getElementById('public-colaborador').value.trim();
+                    if (!nome) throw new Error("Preencha seu nome.");
+                    let detalhes = "Dia todo";
+                    if (!document.getElementById('public-diatodo').checked) {
+                        const i = document.getElementById('public-hora-inicio').value;
+                        const f = document.getElementById('public-hora-fim').value;
+                        if (!i || !f) throw new Error("Preencha os horários.");
+                        detalhes = `Das ${i} às ${f}`;
+                    }
+                    await addDoc(absencesRef, {
+                        date: dateVal, colaborador: nome,
+                        tipo: document.getElementById('public-tipo-ausencia').value,
+                        detalhes: detalhes, isAllDay: document.getElementById('public-diatodo').checked,
+                        observacao: document.getElementById('public-observacao').value.trim(),
+                        createdAt: Timestamp.now(), createdBy: userId
+                    });
+                    document.getElementById('public-colaborador').value = '';
+                    document.getElementById('public-observacao').value = '';
+
+                } else if (currentPublicTab === 'event') {
+                    const nome = document.getElementById('public-event-name').value.trim();
+                    if (!nome) throw new Error("Preencha o evento.");
+                    await addDoc(eventsRef, { date: dateVal, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
+                    document.getElementById('public-event-name').value = '';
+                } else if (currentPublicTab === 'birthday') {
+                    const nome = document.getElementById('public-birthday-name').value.trim();
+                    if (!nome) throw new Error("Preencha o aniversariante.");
+                    await addDoc(eventsRef, { date: dateVal, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
+                    document.getElementById('public-birthday-name').value = '';
+                }
+                showToast("Sucesso!", "Registro salvo com sucesso.");
+                setTimeout(() => switchView('welcome'), 1500);
+            } catch (err) { showToast("Erro", err.message); } 
+            finally { btn.innerHTML = originalText; btn.disabled = false; }
+        });
+
+
+        // --- CALENDÁRIO CORE (Modo Admin) ---
+        const calendarGrid = document.getElementById('calendar-grid');
         function renderCalendar() {
+            if (views.calendar.classList.contains('hidden')) return;
+
             calendarGrid.innerHTML = '';
-            const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
-            
-            monthYear.textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const month = currentDate.getMonth();
+            document.getElementById('month-year').textContent = `${monthNames[month]} de ${year}`;
             
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            // Células vazias
             for (let i = 0; i < firstDay; i++) {
                 const empty = document.createElement('div');
-                empty.className = 'bg-transparent';
+                empty.className = "hidden md:block rounded-xl border border-transparent min-h-[120px]";
                 calendarGrid.appendChild(empty);
             }
             
-            // Dias
+            const todayISO = new Date().toISOString().split('T')[0];
+
             for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const dateISO = date.toISOString().split('T')[0];
-                const isTodayDate = isToday(date);
+                const dateISO = new Date(year, month, day).toISOString().split('T')[0];
+                const isToday = dateISO === todayISO;
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `bg-white border rounded-xl p-2 min-h-[100px] lg:min-h-[120px] cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
+                dayCell.dataset.date = dateISO;
                 
-                const cell = document.createElement('div');
-                // Estilo da célula: responsivo e moderno
-                cell.className = `day-cell relative bg-white border border-gray-100 rounded-lg p-1 sm:p-2 h-20 sm:h-24 lg:h-32 flex flex-col cursor-pointer hover:shadow-md hover:border-blue-200 transition-all overflow-hidden ${isTodayDate ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}`;
-                cell.dataset.date = dateISO;
-                
-                const dayNum = document.createElement('span');
-                dayNum.className = `day-number text-xs sm:text-sm font-semibold mb-1 flex items-center justify-center w-6 h-6 rounded-full ${isTodayDate ? 'bg-blue-600 text-white' : 'text-gray-700'}`;
+                const dayNum = document.createElement('div');
+                dayNum.className = `text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1 ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`;
                 dayNum.textContent = day;
-                cell.appendChild(dayNum);
+                dayCell.appendChild(dayNum);
 
                 const pillsContainer = document.createElement('div');
-                pillsContainer.className = 'flex-1 overflow-y-hidden overflow-x-hidden flex flex-col gap-1';
+                pillsContainer.className = "flex-1 space-y-1 overflow-hidden";
 
-                const absences = allAbsences.filter(a => a.date === dateISO);
-                absences.forEach(abs => pillsContainer.appendChild(createAbsencePill(abs)));
+                // Renderiza Ausências
+                allAbsences.filter(a => a.date === dateISO).forEach(a => {
+                    const cfg = typeConfig[a.tipo] || typeConfig['ferias'];
+                    const p = document.createElement('div');
+                    p.className = `text-[11px] font-bold px-1.5 py-0.5 border-l-2 rounded-r truncate ${cfg.pillColor}`;
+                    p.textContent = a.colaborador;
+                    pillsContainer.appendChild(p);
+                });
 
-                const events = allEvents.filter(e => e.date === dateISO);
-                events.forEach(evt => pillsContainer.appendChild(createEventPill(evt)));
-                
-                cell.appendChild(pillsContainer);
-                calendarGrid.appendChild(cell);
+                // Renderiza Eventos/Aniversários
+                allEvents.filter(e => e.date === dateISO).forEach(e => {
+                    const typeKey = e.type === 'birthday' ? 'birthday' : (e.type === 'general' ? 'general' : 'event');
+                    const cfg = typeConfig[typeKey] || typeConfig['general'];
+                    const p = document.createElement('div');
+                    p.className = `text-[11px] font-bold px-1.5 py-0.5 border-l-2 rounded-r truncate ${cfg.pillColor}`;
+                    p.textContent = e.type === 'birthday' ? `🎂 ${e.nome}` : e.nome;
+                    pillsContainer.appendChild(p);
+                });
+
+                dayCell.appendChild(pillsContainer);
+                calendarGrid.appendChild(dayCell);
             }
         }
+
+        document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+
+        // --- LÓGICA DO MODAL DE DIA (ADMIN) ---
+        const dayModal = document.getElementById('dayModal');
+        const dayModalContent = document.getElementById('modalContent');
         
-        function createAbsencePill(abs) {
-            const el = document.createElement('div');
-            let colors = '';
-            // Definição de Cores Profissionais
-            switch (abs.tipo) {
-                case 'medical': colors = 'bg-red-50 text-red-700 border-l-2 border-red-500'; break;
-                case 'time_bank': colors = 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'; break;
-                case 'personal': colors = 'bg-orange-50 text-orange-700 border-l-2 border-orange-500'; break;
-                case 'vacation': colors = 'bg-teal-50 text-teal-700 border-l-2 border-teal-500'; break; // Cor de Férias
-                default: colors = 'bg-gray-100 text-gray-700';
+        calendarGrid.addEventListener('click', (e) => {
+            const cell = e.target.closest('[data-date]');
+            if (cell) {
+                selectedDateISO = cell.dataset.date;
+                openDayModal(selectedDateISO);
             }
-            el.className = `event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded-r truncate font-medium mb-0.5 ${colors}`;
-            el.textContent = abs.colaborador;
-            return el;
+        });
+        document.getElementById('btn-fab-add').addEventListener('click', () => {
+            selectedDateISO = new Date().toISOString().split('T')[0];
+            openDayModal(selectedDateISO);
+        });
+
+        function openDayModal(dateStr) {
+            const d = new Date(dateStr + 'T12:00:00');
+            document.getElementById('modal-date-title').textContent = `${d.getDate()} de ${monthNames[d.getMonth()]} de ${d.getFullYear()}`;
+            setAdminTab('absences');
+            updateRecordsList();
+            dayModal.classList.remove('hidden');
+            setTimeout(() => dayModalContent.classList.add('modal-enter-active'), 10);
         }
 
-        function createEventPill(evt) {
-            const el = document.createElement('div');
-            if (evt.type === 'birthday') {
-                el.className = 'event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded border border-pink-200 bg-pink-50 text-pink-700 truncate font-medium';
-                el.textContent = '🎂 ' + evt.nome;
-            } else {
-                el.className = 'event-pill text-[10px] sm:text-xs px-1 py-0.5 rounded border border-purple-200 bg-purple-50 text-purple-700 truncate font-medium';
-                el.textContent = evt.nome;
-            }
-            return el;
+        function closeDayModal() {
+            dayModalContent.classList.remove('modal-enter-active');
+            setTimeout(() => dayModal.classList.add('hidden'), 200);
         }
+        document.getElementById('close-modal').addEventListener('click', closeDayModal);
+        dayModal.addEventListener('click', (e) => { if (e.target === dayModal) closeDayModal(); });
 
-        // Funções UI
-        function openModal(dateISO) {
-            selectedDateISO = dateISO;
-            const d = new Date(dateISO + 'T12:00:00');
-            modalTitle.textContent = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-            
-            resetAbsenceForm();
-            resetEventForm();
-            
-            // Reset datas férias
-            document.getElementById('data-inicio-ferias').value = dateISO;
-            document.getElementById('data-fim-ferias').value = dateISO;
+        document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => setAdminTab(e.target.dataset.tab));
+        });
 
-            toggleTypeFields(); 
-
-            updateModalLists();
-            switchTab('absences');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
-                modal.firstElementChild.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeModalHandler() {
-            modal.firstElementChild.classList.remove('scale-100', 'opacity-100');
-            modal.firstElementChild.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 200);
-            resetAbsenceForm();
-            resetEventForm();
-        }
-
-        function switchTab(tabId) {
-            ['absences', 'events', 'birthdays'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                const content = document.getElementById(`content-${t}`);
-                if (t === tabId) {
-                    btn.className = 'flex-1 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 focus:outline-none transition-colors';
-                    content.classList.remove('hidden');
-                } else {
-                    btn.className = 'flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 focus:outline-none transition-colors';
-                    content.classList.add('hidden');
-                }
+        function setAdminTab(tabId) {
+            currentAdminTab = tabId;
+            document.querySelectorAll('.modal-tab-btn').forEach(b => {
+                b.className = "modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition";
             });
+            document.querySelector(`.modal-tab-btn[data-tab="${tabId}"]`).className = "modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb] transition";
+
+            document.querySelectorAll('.admin-form-content').forEach(f => f.classList.add('hidden'));
+            document.getElementById(`admin-form-${tabId}`).classList.remove('hidden');
+
+            const titleEl = document.getElementById('form-title');
+            if (tabId === 'absences') titleEl.textContent = 'Nova Ausência';
+            if (tabId === 'events') titleEl.textContent = 'Novo Evento';
+            if (tabId === 'birthdays') titleEl.textContent = 'Novo Aniversário';
+            
+            updateRecordsList();
         }
 
-        // Reset Forms
-        function resetAbsenceForm() {
-            editingAbsenceId = null;
-            document.getElementById('absence-form-title').textContent = "Nova Ausência";
-            document.getElementById('save-absence-text').textContent = "Confirmar Ausência";
-            document.getElementById('absence-form-container').classList.remove('editing-mode');
-            document.getElementById('cancel-edit-absence').classList.add('hidden');
-            
-            document.getElementById('colaborador').value = '';
-            document.getElementById('tipo-ausencia').value = 'medical';
-            document.getElementById('observacao').value = '';
-            document.getElementById('dia-todo').checked = true;
-            document.getElementById('hora-inicio').value = '';
-            document.getElementById('hora-fim').value = '';
-            toggleTimeFields();
-            toggleTypeFields();
-        }
+        // Salvamento Rápido no Modal Admin
+        document.getElementById('btn-save-admin-absence').addEventListener('click', async () => {
+            const nome = document.getElementById('admin-colaborador').value.trim();
+            if(!nome) return;
+            await addDoc(absencesRef, { date: selectedDateISO, colaborador: nome, tipo: document.getElementById('admin-motivo').value, detalhes: "Dia todo", createdAt: Timestamp.now(), createdBy: userId });
+            document.getElementById('admin-colaborador').value = '';
+        });
+        document.getElementById('btn-save-admin-event').addEventListener('click', async () => {
+            const nome = document.getElementById('admin-evento').value.trim();
+            if(!nome) return;
+            await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
+            document.getElementById('admin-evento').value = '';
+        });
+        document.getElementById('btn-save-admin-birthday').addEventListener('click', async () => {
+            const nome = document.getElementById('admin-aniversariante').value.trim();
+            if(!nome) return;
+            await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
+            document.getElementById('admin-aniversariante').value = '';
+        });
 
-        function resetEventForm() {
-            editingEventId = null;
-            document.getElementById('event-form-title').textContent = "Novo Evento";
-            document.getElementById('save-event-text').textContent = "Salvar Evento";
-            document.getElementById('event-form-container').classList.remove('editing-mode');
-            document.getElementById('cancel-edit-event').classList.add('hidden');
-            document.getElementById('event-name').value = '';
-        }
+        // Listagem no Modal Admin
+        function updateRecordsList() {
+            const list = document.getElementById('records-list');
+            list.innerHTML = '';
+            
+            let records = [];
+            if (currentAdminTab === 'absences') records = allAbsences.filter(a => a.date === selectedDateISO).map(a => ({...a, _category: 'absence'}));
+            else if (currentAdminTab === 'events') records = allEvents.filter(e => e.date === selectedDateISO && e.type !== 'birthday').map(e => ({...e, _category: 'event'}));
+            else if (currentAdminTab === 'birthdays') records = allEvents.filter(e => e.date === selectedDateISO && e.type === 'birthday').map(e => ({...e, _category: 'event'}));
 
-        // Fill Form for Edit
-        function editAbsence(abs) {
-            editingAbsenceId = abs.id;
-            document.getElementById('absence-form-title').textContent = "Editando Ausência";
-            document.getElementById('save-absence-text').textContent = "Atualizar Ausência";
-            document.getElementById('absence-form-container').classList.add('editing-mode');
-            document.getElementById('cancel-edit-absence').classList.remove('hidden');
-            
-            document.getElementById('colaborador').value = abs.colaborador;
-            document.getElementById('tipo-ausencia').value = abs.tipo;
-            document.getElementById('observacao').value = abs.observacao || '';
-            document.getElementById('dia-todo').checked = abs.isAllDay;
-            
-            if (!abs.isAllDay) {
-                document.getElementById('hora-inicio').value = abs.startTime;
-                document.getElementById('hora-fim').value = abs.endTime;
+            if (records.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
             }
-            
-            toggleTimeFields();
-            toggleTypeFields();
-            
-            // Focar no formulário (scroll to top do modal content)
-            document.querySelector('.custom-scrollbar').scrollTop = 0;
-        }
+            document.getElementById('empty-state').classList.add('hidden');
 
-        function editEvent(evt) {
-            editingEventId = evt.id;
-            document.getElementById('event-form-title').textContent = "Editando Evento";
-            document.getElementById('save-event-text').textContent = "Atualizar Evento";
-            document.getElementById('event-form-container').classList.add('editing-mode');
-            document.getElementById('cancel-edit-event').classList.remove('hidden');
-            
-            document.getElementById('event-name').value = evt.nome;
-            switchTab('events');
-        }
+            records.forEach(rec => {
+                const isAbsence = rec._category === 'absence';
+                const mainName = isAbsence ? rec.colaborador : rec.nome;
+                
+                let cfgLabel = ""; let subText = "";
+                if (isAbsence) {
+                    cfgLabel = typeConfig[rec.tipo]?.label.toUpperCase() || 'AUSÊNCIA';
+                    subText = rec.detalhes;
+                } else {
+                    cfgLabel = rec.type === 'birthday' ? 'ANIVERSÁRIO' : 'EVENTO';
+                    subText = "Dia todo";
+                }
 
-        function updateModalLists() {
-            const listAbs = document.getElementById('absences-list');
-            const listEvt = document.getElementById('events-list');
-            
-            listAbs.innerHTML = '';
-            listEvt.innerHTML = '';
-
-            // Render Ausências
-            const abs = allAbsences.filter(a => a.date === selectedDateISO);
-            if (abs.length === 0) listAbs.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-2">Nada registrado.</p>';
-            
-            abs.forEach(a => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-start p-2 bg-gray-50 rounded border border-gray-100 hover:bg-gray-100 transition-colors';
-                div.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                             <span class="font-bold text-sm text-gray-800">${escapeHTML(a.colaborador)}</span>
-                             <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">${getAbsenceTypeText(a.tipo)}</span>
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center py-4 border-b border-gray-100 last:border-0";
+                item.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-bold text-gray-900 text-[15px] tracking-tight">${mainName}</span>
+                            <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">${cfgLabel}</span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-0.5">${escapeHTML(a.detalhes || '')}</p>
-                        ${a.observacao ? `<p class="text-xs text-gray-400 italic mt-1">"${escapeHTML(a.observacao)}"</p>` : ''}
+                        <p class="text-sm text-gray-500">${subText}</p>
+                        ${isAbsence && rec.observacao ? `<p class="text-xs text-gray-400 italic mt-1">${rec.observacao}</p>` : ''}
                     </div>
-                    <div class="flex items-center">
-                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-1" data-id="${a.id}" data-type="abs" title="Editar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${a.id}" data-type="abs" title="Excluir">
+                    <div class="flex items-center gap-3 text-[#60a5fa]">
+                        <button class="btn-delete hover:text-red-500 transition p-2" aria-label="Excluir">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                     </div>
                 `;
-                listAbs.appendChild(div);
-            });
-
-            // Render Eventos
-            const evts = allEvents.filter(e => e.date === selectedDateISO);
-            if (evts.length === 0) listEvt.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-2">Nada registrado.</p>';
-
-            evts.forEach(e => {
-                const div = document.createElement('div');
-                const isBday = e.type === 'birthday';
-                div.className = `flex justify-between items-center p-2 rounded border transition-colors ${isBday ? 'bg-pink-50 border-pink-100' : 'bg-purple-50 border-purple-100'}`;
-                div.innerHTML = `
-                    <span class="font-semibold text-sm ${isBday ? 'text-pink-800' : 'text-purple-800'}">${isBday ? '🎂 ' : ''}${escapeHTML(e.nome)}</span>
-                    <div class="flex items-center">
-                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-1" data-id="${e.id}" data-type="evt" title="Editar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button class="delete-btn text-gray-400 hover:text-red-500 p-1" data-id="${e.id}" data-type="evt" title="Excluir">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                `;
-                listEvt.appendChild(div);
-            });
-            
-            // Listeners de Edit e Delete
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteItem(btn.dataset.id, btn.dataset.type);
-                });
-            });
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const id = btn.dataset.id;
-                    const type = btn.dataset.type;
-                    if(type === 'abs') {
-                        const item = allAbsences.find(a => a.id === id);
-                        if(item) editAbsence(item);
-                    } else {
-                        const item = allEvents.find(e => e.id === id);
-                        if(item) editEvent(item);
+                item.querySelector('.btn-delete').addEventListener('click', async () => {
+                    if (confirm('Deseja excluir este registro?')) {
+                        const ref = isAbsence ? absencesRef : eventsRef;
+                        await deleteDoc(doc(ref, rec.id));
                     }
                 });
+                list.appendChild(item);
             });
         }
 
-        async function deleteItem(id, type) {
-            if (type === 'abs') {
-                const item = allAbsences.find(a => a.id === id);
-                if (!item) return;
-
-                // Verificar se faz parte de um grupo (Férias)
-                if (item.groupId) {
-                    if (confirm("Este item faz parte de um grupo de FÉRIAS. Deseja excluir TODOS os dias deste período?")) {
-                        // Deletar em lote
-                        try {
-                            const q = query(absencesCollectionRef, where('groupId', '==', item.groupId));
-                            const snapshot = await getDocs(q);
-                            const batch = writeBatch(db);
-                            snapshot.forEach(doc => {
-                                batch.delete(doc.ref);
-                            });
-                            await batch.commit();
-                            showToast("Férias Excluídas", "Todo o período foi removido.");
-                            return;
-                        } catch (e) {
-                            console.error(e);
-                            alert("Erro ao excluir lote de férias.");
-                            return;
-                        }
-                    } else {
-                        // Se usuário cancelar o lote, perguntar se quer deletar só o dia
-                        if (!confirm("Deseja excluir APENAS este dia específico?")) return;
-                    }
-                } else {
-                    if(!confirm("Remover este item?")) return;
-                }
-
-                try {
-                    await deleteDoc(doc(absencesCollectionRef, id));
-                } catch(e) { console.error(e); alert("Erro ao deletar."); }
-            } else {
-                if(!confirm("Remover este evento?")) return;
-                try {
-                    await deleteDoc(doc(eventsCollectionRef, id));
-                } catch(e) { console.error(e); alert("Erro ao deletar."); }
-            }
-        }
-
-        // Helpers
-        function isToday(d) {
-            const today = new Date();
-            return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-        }
-        function escapeHTML(str) {
-            if(!str) return '';
-            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-        }
-        function getAbsenceTypeText(t) {
-            const map = { 'vacation': 'Férias', 'medical': 'Atestado', 'time_bank': 'Banco de Horas', 'personal': 'Pessoal' };
-            return map[t] || 'Outro';
-        }
-        
-        // Controla a visibilidade dos campos baseado no tipo
-        function toggleTypeFields() {
-            const type = document.getElementById('tipo-ausencia').value;
-            const vacDiv = document.getElementById('vacation-dates');
-            const regDiv = document.getElementById('regular-absence-fields');
-
-            // Se estiver editando, não permitimos trocar pra Férias pois mudaria a lógica de datas complexas
-            // Apenas permitimos editar detalhes de um item de férias já existente (sem mudar datas em lote por aqui)
-            
-            if (type === 'vacation') {
-                // Se estiver criando novo
-                if (!editingAbsenceId) {
-                    vacDiv.classList.remove('hidden');
-                    regDiv.classList.add('hidden');
-                } else {
-                    // Se estiver editando um item que É férias
-                    vacDiv.classList.add('hidden'); // Esconde datas em lote na edição individual
-                    regDiv.classList.add('hidden'); // Esconde horas pois férias é dia todo
-                }
-            } else {
-                vacDiv.classList.add('hidden');
-                regDiv.classList.remove('hidden');
-                toggleTimeFields();
-            }
-        }
-
-        function toggleTimeFields() {
-            const chk = document.getElementById('dia-todo');
-            const fields = document.getElementById('time-fields');
-            if(chk.checked) fields.classList.add('hidden');
-            else fields.classList.remove('hidden');
-        }
-
-        function updateModalListsIfOpen() { if(!modal.classList.contains('hidden')) updateModalLists(); }
-        function updateReportDataIfOpen() { if(!document.getElementById('reportModal').classList.contains('hidden')) updateReportData(); }
-
-        // --- Salvar Dados (Create / Update) ---
-        document.getElementById('save-absence').addEventListener('click', async () => {
-            const colab = document.getElementById('colaborador').value.trim();
-            const type = document.getElementById('tipo-ausencia').value;
-            const obs = document.getElementById('observacao').value.trim();
-            
-            if(!colab) return alert("Nome obrigatório");
-            
-            try {
-                // MODO EDIÇÃO
-                if (editingAbsenceId) {
-                     const isAllDay = document.getElementById('dia-todo').checked;
-                     let details = "Dia todo";
-                     let start = null, end = null;
-                    
-                     // Se for férias, forçamos dia todo
-                     if (type === 'vacation') {
-                         details = "Férias";
-                     } else if (!isAllDay) {
-                        start = document.getElementById('hora-inicio').value;
-                        end = document.getElementById('hora-fim').value;
-                        if(!start || !end) return alert("Horários obrigatórios");
-                        details = `${start} - ${end}`;
-                     }
-
-                     await updateDoc(doc(absencesCollectionRef, editingAbsenceId), {
-                        colaborador: colab,
-                        tipo: type,
-                        detalhes: details,
-                        isAllDay: type === 'vacation' ? true : isAllDay,
-                        startTime: start,
-                        endTime: end,
-                        observacao: obs,
-                        // Não atualizamos groupId ou data na edição simples para evitar quebra de integridade
-                     });
-                     
-                     resetAbsenceForm(); // Sai do modo edição
-                     showToast("Atualizado", "Registro alterado com sucesso.");
-
-                } 
-                // MODO CRIAÇÃO
-                else {
-                    // Lógica de Férias (Múltiplos Dias)
-                    if (type === 'vacation') {
-                        const startVal = document.getElementById('data-inicio-ferias').value;
-                        const endVal = document.getElementById('data-fim-ferias').value;
-                        
-                        if(!startVal || !endVal) return alert("Preencha data de início e fim das férias.");
-                        if(startVal > endVal) return alert("A data de início não pode ser maior que a data final.");
-
-                        const startDate = new Date(startVal + 'T12:00:00');
-                        const endDate = new Date(endVal + 'T12:00:00');
-                        
-                        // Gerar ID de grupo único para essas férias
-                        const groupId = 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                        
-                        const batch = writeBatch(db);
-                        
-                        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                            const iso = d.toISOString().split('T')[0];
-                            const docRef = doc(absencesCollectionRef); 
-                            batch.set(docRef, {
-                                date: iso,
-                                collaborator: colab, // Legacy support check
-                                colaborador: colab,
-                                tipo: 'vacation',
-                                detalhes: 'Férias',
-                                isAllDay: true, 
-                                startTime: null, 
-                                endTime: null,
-                                observacao: obs,
-                                createdAt: Timestamp.now(), 
-                                createdBy: userId,
-                                groupId: groupId // Link para deleção em lote
-                            });
-                        }
-                        
-                        await batch.commit();
-                        showToast("Férias Registradas", `${colab}: ${startVal} até ${endVal}`);
-                        
-                        // Fecha modal se for férias pois gera muitos itens
-                        closeModalHandler();
-
-                    } else {
-                        // Lógica Normal (Dia Único)
-                        const isAllDay = document.getElementById('dia-todo').checked;
-                        let details = "Dia todo";
-                        let start = null, end = null;
-                        
-                        if (!isAllDay) {
-                            start = document.getElementById('hora-inicio').value;
-                            end = document.getElementById('hora-fim').value;
-                            if(!start || !end) return alert("Horários obrigatórios");
-                            details = `${start} - ${end}`;
-                        }
-
-                        await addDoc(absencesCollectionRef, {
-                            date: selectedDateISO,
-                            colaborador: colab,
-                            tipo: type,
-                            detalhes: details,
-                            isAllDay, startTime: start, endTime: end,
-                            observacao: obs,
-                            createdAt: Timestamp.now(), createdBy: userId
-                        });
-                        // Limpa form mas mantém modal aberto para adicionar mais
-                        resetAbsenceForm();
-                    }
-                }
-
-            } catch(e) { console.error(e); alert("Erro ao salvar. Verifique conexão."); }
-        });
-
-        document.getElementById('save-event').addEventListener('click', async () => {
-             const nome = document.getElementById('event-name').value.trim();
-             if(!nome) return alert("Nome obrigatório");
-             
-             try {
-                 if (editingEventId) {
-                     await updateDoc(doc(eventsCollectionRef, editingEventId), { nome: nome });
-                     resetEventForm();
-                     showToast("Evento Atualizado", nome);
-                 } else {
-                     await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
-                     document.getElementById('event-name').value = '';
-                 }
-             } catch(e) { console.error(e); }
-        });
-        
-        document.getElementById('save-birthday').addEventListener('click', async () => {
-             const nome = document.getElementById('birthday-person').value.trim();
-             if(!nome) return alert("Nome obrigatório");
-             await addDoc(eventsCollectionRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
-             document.getElementById('birthday-person').value = '';
-        });
-
-        // Cancelar Edição Listeners
-        document.getElementById('cancel-edit-absence').addEventListener('click', (e) => {
-            e.preventDefault();
-            resetAbsenceForm();
-        });
-        document.getElementById('cancel-edit-event').addEventListener('click', (e) => {
-            e.preventDefault();
-            resetEventForm();
-        });
-
-        // --- Notificação ---
+        // --- UTILIDADES ---
+        let toastTimer;
         function showToast(title, msg) {
-            const t = document.getElementById('notification-toast');
+            const toast = document.getElementById('notification-toast');
             document.getElementById('notification-title').textContent = title;
             document.getElementById('notification-message').textContent = msg;
-            t.classList.remove('opacity-0', 'translate-x-full');
-            clearTimeout(notificationTimer);
-            notificationTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-x-full'), 4000);
+            
+            clearTimeout(toastTimer);
+            toast.classList.remove('opacity-0', 'translate-y-full');
+            toastTimer = setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-full'); }, 3000);
         }
 
-        // --- Relatórios ---
-        function updateReportData() {
-            const year = reportFilterDate.getFullYear();
-            const month = parseInt(document.getElementById('report-month-select').value);
-            document.getElementById('report-year').textContent = year;
-            
-            let data = allAbsences.filter(a => {
-                const d = new Date(a.date + 'T12:00:00');
-                return d.getFullYear() === year && (month === -1 || d.getMonth() === month);
-            });
-            
-            // Gráfico
-            const counts = { vacation: 0, medical: 0, time_bank: 0, personal: 0 };
-            data.forEach(a => { if(counts[a.tipo] !== undefined) counts[a.tipo]++; });
-            
-            if(myPieChart) myPieChart.destroy();
-            const ctx = document.getElementById('monthPieChart').getContext('2d');
-            myPieChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Férias', 'Atestado', 'Banco Hrs', 'Pessoal'],
-                    datasets: [{
-                        data: [counts.vacation, counts.medical, counts.time_bank, counts.personal],
-                        backgroundColor: ['#14b8a6', '#ef4444', '#3b82f6', '#f97316'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-            });
+        // Init
+        initFirebase();
 
-            // Lista Detalhada
-            const list = document.getElementById('medical-report-list');
-            list.innerHTML = '';
-            // Agrupar por pessoa e tipo
-            const grouped = {};
-            data.forEach(a => {
-                const k = `${a.colaborador}||${a.tipo}`;
-                grouped[k] = (grouped[k] || 0) + 1;
-            });
-            
-            if(Object.keys(grouped).length === 0) list.innerHTML = '<p class="text-gray-400 text-sm text-center">Sem dados no período.</p>';
-
-            Object.keys(grouped).sort().forEach(key => {
-                const [name, type] = key.split('||');
-                const count = grouped[key];
-                const div = document.createElement('div');
-                div.className = 'flex justify-between p-2 border-b border-gray-100 last:border-0';
-                div.innerHTML = `<span class="text-sm text-gray-700">${name} <span class="text-xs text-gray-400">(${getAbsenceTypeText(type)})</span></span> <span class="font-bold text-gray-800">${count}</span>`;
-                list.appendChild(div);
-            });
-        }
-
-        // Listeners Gerais
-        calendarGrid.addEventListener('click', e => {
-            const cell = e.target.closest('.day-cell');
-            if(cell) openModal(cell.dataset.date);
-        });
-        
-        // Listener do FAB (Botão Novo)
-        document.getElementById('fab-add').addEventListener('click', () => {
-            const todayISO = new Date().toISOString().split('T')[0];
-            openModal(todayISO);
-        });
-
-        document.getElementById('close-modal').addEventListener('click', closeModalHandler);
-        document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(); });
-        document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(); });
-        document.getElementById('dia-todo').addEventListener('change', toggleTimeFields);
-        document.getElementById('tipo-ausencia').addEventListener('change', toggleTypeFields);
-        
-        ['absences', 'events', 'birthdays'].forEach(t => document.getElementById(`tab-${t}`).addEventListener('click', () => switchTab(t)));
-        
-        // Admin Listeners
-        document.getElementById('admin-access-button').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('passwordModal').classList.remove('hidden'); });
-        document.getElementById('cancel-password').addEventListener('click', () => document.getElementById('passwordModal').classList.add('hidden'));
-        document.getElementById('submit-password').addEventListener('click', () => {
-             if(document.getElementById('admin-password').value === ADMIN_PASSWORD) {
-                 document.getElementById('passwordModal').classList.add('hidden');
-                 document.getElementById('reportModal').classList.remove('hidden');
-                 setTimeout(() => { document.getElementById('reportModal').firstElementChild.classList.remove('scale-95', 'opacity-0'); }, 10);
-                 updateReportData();
-             } else { document.getElementById('password-error').classList.remove('hidden'); }
-        });
-        document.getElementById('close-report').addEventListener('click', () => {
-            const rm = document.getElementById('reportModal');
-            rm.firstElementChild.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => rm.classList.add('hidden'), 200);
-        });
-        document.getElementById('report-month-select').addEventListener('change', updateReportData);
-        document.getElementById('report-prev-year').addEventListener('click', () => { reportFilterDate.setFullYear(reportFilterDate.getFullYear()-1); updateReportData(); });
-        document.getElementById('report-next-year').addEventListener('click', () => { reportFilterDate.setFullYear(reportFilterDate.getFullYear()+1); updateReportData(); });
-        document.getElementById('btn-legend').addEventListener('click', () => { document.getElementById('legend-panel').classList.toggle('hidden'); });
-        
-        initializeFirebase();
-        renderCalendar();
-        </script>
-    </div>
+    </script>
 </body>
 </html>
 
