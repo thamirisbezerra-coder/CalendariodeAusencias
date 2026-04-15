@@ -59,8 +59,18 @@
     <!-- ========================================== -->
     <!-- TELA 2: FORMULÁRIO PÚBLICO -->
     <!-- ========================================== -->
-    <div id="public-form-view" class="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden view-enter">
-        <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-white">
+    <div id="public-form-view" class="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden view-enter flex-col relative max-h-[calc(100vh-2rem)]">
+        
+        <!-- Tela de Sucesso Overlay -->
+        <div id="success-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex-col items-center justify-center rounded-2xl transition-all duration-300">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900">Sucesso!</h3>
+            <p class="text-gray-500 font-medium mt-2">Registro enviado para o calendário.</p>
+        </div>
+
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 rounded-t-2xl">
             <div class="flex items-center gap-3">
                 <button id="btn-back-welcome" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -70,7 +80,7 @@
             <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-6 w-auto object-contain grayscale opacity-50">
         </div>
 
-        <div class="p-6 space-y-6">
+        <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
             <!-- Seleção de Data -->
             <div>
                 <label for="public-date" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Data do Registro</label>
@@ -148,11 +158,10 @@
         </div>
     </div>
 
-
     <!-- ========================================== -->
     <!-- TELA 3: CALENDÁRIO (ADMIN / RESTRITO) -->
     <!-- ========================================== -->
-    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[90vh]">
+    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[95vh] self-start mt-4">
         
         <!-- Cabeçalho (Estilo da Imagem) -->
         <header class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
@@ -215,7 +224,7 @@
             </div>
 
             <!-- Grade do Calendário -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-hidden pb-2" style="grid-auto-rows: 1fr;">
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-1">
                 <!-- Preenchido via JS -->
             </div>
             
@@ -322,7 +331,7 @@
     <div id="notification-toast" class="fixed bottom-5 right-5 w-full max-w-sm bg-white shadow-xl rounded-2xl border border-gray-100 pointer-events-auto overflow-hidden z-[100] transform translate-y-full opacity-0 transition-all duration-300">
         <div class="p-4 flex items-start gap-3">
             <div class="flex-shrink-0 mt-0.5">
-                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                <div id="toast-icon-container" class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
             </div>
@@ -333,6 +342,20 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmação (Substitui o window.confirm) -->
+    <div id="confirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-[200]">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center modal-enter" id="confirmModalContent">
+            <div class="w-14 h-14 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Excluir Registro?</h3>
+            <p class="text-sm text-gray-500 mb-6">Esta ação não pode ser desfeita.</p>
+            <div class="flex gap-3">
+                <button id="btn-cancel-confirm" class="flex-1 py-3 text-sm font-bold text-gray-700 bg-gray-50 rounded-xl hover:bg-gray-100 transition">Cancelar</button>
+                <button id="btn-accept-confirm" class="flex-1 py-3 text-sm font-bold text-white bg-red-600 rounded-xl shadow-sm hover:bg-red-700 transition">Excluir</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- SCRIPTS E LÓGICA FIREBASE -->
@@ -392,25 +415,26 @@
 
             try {
                 await signInAnonymously(auth);
-            } catch (e) { console.error("Auth error:", e); showToast("Erro", "Falha na conexão com servidor."); }
+            } catch (e) { console.error("Auth error:", e); showToast("Erro", "Falha na conexão com servidor.", "error"); }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
-                    // COLEÇÕES ORIGINAIS
+                    
+                    // Restabelecendo o caminho original para recuperar seus dados e evitar erros de permissão
                     absencesRef = collection(db, 'absences');
                     eventsRef = collection(db, 'events');
                     
                     onSnapshot(query(absencesRef), (snap) => {
                         allAbsences = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         renderCalendar();
-                        if(!document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
+                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
                     });
                     
                     onSnapshot(query(eventsRef), (snap) => {
                         allEvents = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         renderCalendar();
-                        if(!document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
+                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
                     });
                 }
             });
@@ -418,133 +442,170 @@
 
         // --- NAVEGAÇÃO ENTRE TELAS ---
         function switchView(viewName) {
-            Object.values(views).forEach(v => v.classList.add('hidden'));
-            views[viewName].classList.remove('hidden');
+            Object.values(views).forEach(v => {
+                if(v) {
+                    v.classList.add('hidden');
+                    if (v.id === 'public-form-view') v.classList.remove('flex');
+                }
+            });
+            
+            if (views[viewName]) {
+                views[viewName].classList.remove('hidden');
+                if (viewName === 'publicForm') views[viewName].classList.add('flex');
+            }
+            
+            // Remove a classe do body que centraliza verticalmente se for pro calendário
+            if (viewName === 'calendar') document.body.classList.replace('justify-center', 'justify-start');
+            else { document.body.classList.replace('justify-start', 'justify-center'); document.body.classList.add('justify-center'); }
         }
 
-        document.getElementById('btn-go-form').addEventListener('click', () => {
+        document.getElementById('btn-go-form')?.addEventListener('click', () => {
             switchView('publicForm');
-            document.getElementById('public-date').value = new Date().toISOString().split('T')[0];
+            const dtInput = document.getElementById('public-date');
+            if (dtInput) dtInput.value = new Date().toISOString().split('T')[0];
         });
-        document.getElementById('btn-back-welcome').addEventListener('click', () => switchView('welcome'));
-        document.getElementById('btn-logout-admin').addEventListener('click', () => switchView('welcome'));
+        document.getElementById('btn-back-welcome')?.addEventListener('click', () => switchView('welcome'));
+        document.getElementById('btn-logout-admin')?.addEventListener('click', () => switchView('welcome'));
 
         // --- LOGIN ADMIN ---
         const passwordModal = document.getElementById('passwordModal');
         const passwordContent = document.getElementById('passwordModalContent');
         
-        document.getElementById('btn-show-admin-login').addEventListener('click', () => {
-            document.getElementById('admin-password').value = '';
-            passwordModal.classList.remove('hidden');
+        document.getElementById('btn-show-admin-login')?.addEventListener('click', () => {
+            const adminPass = document.getElementById('admin-password');
+            if (adminPass) adminPass.value = '';
+            if (passwordModal) passwordModal.classList.remove('hidden');
             setTimeout(() => {
-                passwordContent.classList.add('modal-enter-active');
-                document.getElementById('admin-password').focus();
+                if (passwordContent) passwordContent.classList.add('modal-enter-active');
+                if (adminPass) adminPass.focus();
             }, 10);
         });
 
         function closePasswordModal() {
-            passwordContent.classList.remove('modal-enter-active');
-            setTimeout(() => passwordModal.classList.add('hidden'), 200);
+            if (passwordContent) passwordContent.classList.remove('modal-enter-active');
+            setTimeout(() => {
+                if (passwordModal) passwordModal.classList.add('hidden');
+            }, 200);
         }
-        document.getElementById('cancel-password').addEventListener('click', closePasswordModal);
+        document.getElementById('cancel-password')?.addEventListener('click', closePasswordModal);
 
         function checkAdminPassword() {
-            if (document.getElementById('admin-password').value === ADMIN_PASSWORD) {
+            const adminPass = document.getElementById('admin-password');
+            if (adminPass && adminPass.value === ADMIN_PASSWORD) {
                 closePasswordModal();
                 switchView('calendar');
                 renderCalendar();
             } else {
                 showToast("Erro", "Senha incorreta.");
-                document.getElementById('admin-password').value = '';
+                if (adminPass) adminPass.value = '';
             }
         }
-        document.getElementById('submit-password').addEventListener('click', checkAdminPassword);
-        document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') checkAdminPassword(); });
+        document.getElementById('submit-password')?.addEventListener('click', checkAdminPassword);
+        document.getElementById('admin-password')?.addEventListener('keyup', (e) => { if (e.key === 'Enter') checkAdminPassword(); });
 
         // --- LÓGICA DO FORMULÁRIO PÚBLICO ---
         document.querySelectorAll('.public-tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn?.addEventListener('click', (e) => {
                 document.querySelectorAll('.public-tab-btn').forEach(b => {
                     b.className = "public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm";
                 });
                 btn.className = "public-tab-btn active bg-blue-50 text-blue-700 border border-blue-200 py-2 rounded-lg text-sm font-bold transition shadow-sm";
                 
                 currentPublicTab = btn.dataset.formType;
-                document.getElementById('public-form-absence').classList.add('hidden');
-                document.getElementById('public-form-event').classList.add('hidden');
-                document.getElementById('public-form-birthday').classList.add('hidden');
-                document.getElementById(`public-form-${currentPublicTab}`).classList.remove('hidden');
+                document.getElementById('public-form-absence')?.classList.add('hidden');
+                document.getElementById('public-form-event')?.classList.add('hidden');
+                document.getElementById('public-form-birthday')?.classList.add('hidden');
+                document.getElementById(`public-form-${currentPublicTab}`)?.classList.remove('hidden');
             });
         });
 
-        document.getElementById('public-diatodo').addEventListener('change', (e) => {
-            document.getElementById('public-time-fields').classList.toggle('hidden', e.target.checked);
+        document.getElementById('public-diatodo')?.addEventListener('change', (e) => {
+            document.getElementById('public-time-fields')?.classList.toggle('hidden', e.target.checked);
         });
 
-        document.getElementById('btn-submit-public').addEventListener('click', async () => {
-            if (!userId) return showToast("Aguarde", "Conectando ao servidor...");
-            const dateVal = document.getElementById('public-date').value;
-            if (!dateVal) return showToast("Aviso", "Selecione a data.");
+        document.getElementById('btn-submit-public')?.addEventListener('click', async () => {
+            if (!userId) return showToast("Aguarde", "Conectando ao servidor...", "warning");
+            
+            const dateInput = document.getElementById('public-date');
+            if (!dateInput || !dateInput.value) return showToast("Atenção", "Selecione a data do registro.", "warning");
+            const dateVal = dateInput.value;
 
             const btn = document.getElementById('btn-submit-public');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "Salvando..."; btn.disabled = true;
+            const originalText = btn ? btn.innerHTML : "Salvar";
+            if (btn) { btn.innerHTML = "Salvando..."; btn.disabled = true; }
 
             try {
                 if (currentPublicTab === 'absence') {
-                    const nome = document.getElementById('public-colaborador').value.trim();
+                    const nome = document.getElementById('public-colaborador')?.value.trim();
                     if (!nome) throw new Error("Preencha seu nome.");
                     let detalhes = "Dia todo";
-                    if (!document.getElementById('public-diatodo').checked) {
-                        const i = document.getElementById('public-hora-inicio').value;
-                        const f = document.getElementById('public-hora-fim').value;
-                        if (!i || !f) throw new Error("Preencha os horários.");
+                    
+                    const isAllDay = document.getElementById('public-diatodo')?.checked;
+                    if (!isAllDay) {
+                        const i = document.getElementById('public-hora-inicio')?.value;
+                        const f = document.getElementById('public-hora-fim')?.value;
+                        if (!i || !f) throw new Error("Preencha os horários de início e fim.");
                         detalhes = `Das ${i} às ${f}`;
                     }
                     await addDoc(absencesRef, {
                         date: dateVal, colaborador: nome,
-                        tipo: document.getElementById('public-tipo-ausencia').value,
-                        detalhes: detalhes, isAllDay: document.getElementById('public-diatodo').checked,
-                        observacao: document.getElementById('public-observacao').value.trim(),
+                        tipo: document.getElementById('public-tipo-ausencia')?.value,
+                        detalhes: detalhes, isAllDay: isAllDay,
+                        observacao: document.getElementById('public-observacao')?.value.trim() || "",
                         createdAt: Timestamp.now(), createdBy: userId
                     });
-                    document.getElementById('public-colaborador').value = '';
-                    document.getElementById('public-observacao').value = '';
+                    
+                    if(document.getElementById('public-colaborador')) document.getElementById('public-colaborador').value = '';
+                    if(document.getElementById('public-observacao')) document.getElementById('public-observacao').value = '';
 
                 } else if (currentPublicTab === 'event') {
-                    const nome = document.getElementById('public-event-name').value.trim();
-                    if (!nome) throw new Error("Preencha o evento.");
+                    const nome = document.getElementById('public-event-name')?.value.trim();
+                    if (!nome) throw new Error("Preencha o nome do evento.");
                     await addDoc(eventsRef, { date: dateVal, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
-                    document.getElementById('public-event-name').value = '';
+                    if(document.getElementById('public-event-name')) document.getElementById('public-event-name').value = '';
                 } else if (currentPublicTab === 'birthday') {
-                    const nome = document.getElementById('public-birthday-name').value.trim();
-                    if (!nome) throw new Error("Preencha o aniversariante.");
+                    const nome = document.getElementById('public-birthday-name')?.value.trim();
+                    if (!nome) throw new Error("Preencha o nome do aniversariante.");
                     await addDoc(eventsRef, { date: dateVal, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
-                    document.getElementById('public-birthday-name').value = '';
+                    if(document.getElementById('public-birthday-name')) document.getElementById('public-birthday-name').value = '';
                 }
-                showToast("Sucesso!", "Registro salvo com sucesso.");
-                setTimeout(() => switchView('welcome'), 1500);
-            } catch (err) { showToast("Erro", err.message); } 
-            finally { btn.innerHTML = originalText; btn.disabled = false; }
+                
+                // Mostrar overlay de sucesso
+                const overlay = document.getElementById('success-overlay');
+                if(overlay) {
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                    
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                        switchView('welcome');
+                    }, 2000);
+                }
+
+            } catch (err) { showToast("Atenção", err.message, "error"); } 
+            finally { if(btn) { btn.innerHTML = originalText; btn.disabled = false; } }
         });
 
 
         // --- CALENDÁRIO CORE (Modo Admin) ---
         const calendarGrid = document.getElementById('calendar-grid');
         function renderCalendar() {
-            if (views.calendar.classList.contains('hidden')) return;
+            if (views.calendar && views.calendar.classList.contains('hidden')) return;
+            if (!calendarGrid) return;
 
             calendarGrid.innerHTML = '';
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
-            document.getElementById('month-year').textContent = `${monthNames[month]} de ${year}`;
+            const monthYearEl = document.getElementById('month-year');
+            if (monthYearEl) monthYearEl.textContent = `${monthNames[month]} de ${year}`;
             
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             for (let i = 0; i < firstDay; i++) {
                 const empty = document.createElement('div');
-                empty.className = "hidden md:block rounded-xl border border-transparent h-full";
+                empty.className = "hidden md:block rounded-xl border border-transparent min-h-[100px]";
                 calendarGrid.appendChild(empty);
             }
             
@@ -555,7 +616,7 @@
                 const isToday = dateISO === todayISO;
 
                 const dayCell = document.createElement('div');
-                dayCell.className = `bg-white border rounded-xl p-2 h-full overflow-hidden cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
+                dayCell.className = `bg-white border rounded-xl p-2 min-h-[100px] cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
                 dayCell.dataset.date = dateISO;
                 
                 const dayNum = document.createElement('div');
@@ -564,7 +625,7 @@
                 dayCell.appendChild(dayNum);
 
                 const pillsContainer = document.createElement('div');
-                pillsContainer.className = "flex-1 space-y-1 overflow-hidden";
+                pillsContainer.className = "flex-1 space-y-1";
 
                 // Renderiza Ausências
                 allAbsences.filter(a => a.date === dateISO).forEach(a => {
@@ -590,43 +651,44 @@
             }
         }
 
-        document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
-        document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        document.getElementById('prev-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        document.getElementById('next-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
 
         // --- LÓGICA DO MODAL DE DIA (ADMIN) ---
         const dayModal = document.getElementById('dayModal');
         const dayModalContent = document.getElementById('modalContent');
         
-        calendarGrid.addEventListener('click', (e) => {
+        calendarGrid?.addEventListener('click', (e) => {
             const cell = e.target.closest('[data-date]');
             if (cell) {
                 selectedDateISO = cell.dataset.date;
                 openDayModal(selectedDateISO);
             }
         });
-        document.getElementById('btn-fab-add').addEventListener('click', () => {
+        document.getElementById('btn-fab-add')?.addEventListener('click', () => {
             selectedDateISO = new Date().toISOString().split('T')[0];
             openDayModal(selectedDateISO);
         });
 
         function openDayModal(dateStr) {
             const d = new Date(dateStr + 'T12:00:00');
-            document.getElementById('modal-date-title').textContent = `${d.getDate()} de ${monthNames[d.getMonth()]} de ${d.getFullYear()}`;
+            const titleEl = document.getElementById('modal-date-title');
+            if (titleEl) titleEl.textContent = `${d.getDate()} de ${monthNames[d.getMonth()]} de ${d.getFullYear()}`;
             setAdminTab('absences');
             updateRecordsList();
-            dayModal.classList.remove('hidden');
-            setTimeout(() => dayModalContent.classList.add('modal-enter-active'), 10);
+            if (dayModal) dayModal.classList.remove('hidden');
+            setTimeout(() => { if(dayModalContent) dayModalContent.classList.add('modal-enter-active'); }, 10);
         }
 
         function closeDayModal() {
-            dayModalContent.classList.remove('modal-enter-active');
-            setTimeout(() => dayModal.classList.add('hidden'), 200);
+            if(dayModalContent) dayModalContent.classList.remove('modal-enter-active');
+            setTimeout(() => { if(dayModal) dayModal.classList.add('hidden'); }, 200);
         }
-        document.getElementById('close-modal').addEventListener('click', closeDayModal);
-        dayModal.addEventListener('click', (e) => { if (e.target === dayModal) closeDayModal(); });
+        document.getElementById('close-modal')?.addEventListener('click', closeDayModal);
+        dayModal?.addEventListener('click', (e) => { if (e.target === dayModal) closeDayModal(); });
 
         document.querySelectorAll('.modal-tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => setAdminTab(e.target.dataset.tab));
+            btn?.addEventListener('click', (e) => setAdminTab(e.target.dataset.tab));
         });
 
         function setAdminTab(tabId) {
@@ -634,42 +696,48 @@
             document.querySelectorAll('.modal-tab-btn').forEach(b => {
                 b.className = "modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition";
             });
-            document.querySelector(`.modal-tab-btn[data-tab="${tabId}"]`).className = "modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb] transition";
+            const activeBtn = document.querySelector(`.modal-tab-btn[data-tab="${tabId}"]`);
+            if (activeBtn) activeBtn.className = "modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb] transition";
 
             document.querySelectorAll('.admin-form-content').forEach(f => f.classList.add('hidden'));
-            document.getElementById(`admin-form-${tabId}`).classList.remove('hidden');
+            document.getElementById(`admin-form-${tabId}`)?.classList.remove('hidden');
 
             const titleEl = document.getElementById('form-title');
-            if (tabId === 'absences') titleEl.textContent = 'Nova Ausência';
-            if (tabId === 'events') titleEl.textContent = 'Novo Evento';
-            if (tabId === 'birthdays') titleEl.textContent = 'Novo Aniversário';
-            
+            if(titleEl) {
+                if (tabId === 'absences') titleEl.textContent = 'Nova Ausência';
+                if (tabId === 'events') titleEl.textContent = 'Novo Evento';
+                if (tabId === 'birthdays') titleEl.textContent = 'Novo Aniversário';
+            }
             updateRecordsList();
         }
 
         // Salvamento Rápido no Modal Admin
-        document.getElementById('btn-save-admin-absence').addEventListener('click', async () => {
-            const nome = document.getElementById('admin-colaborador').value.trim();
+        document.getElementById('btn-save-admin-absence')?.addEventListener('click', async () => {
+            const el = document.getElementById('admin-colaborador');
+            const nome = el?.value.trim();
             if(!nome) return;
-            await addDoc(absencesRef, { date: selectedDateISO, colaborador: nome, tipo: document.getElementById('admin-motivo').value, detalhes: "Dia todo", createdAt: Timestamp.now(), createdBy: userId });
-            document.getElementById('admin-colaborador').value = '';
+            await addDoc(absencesRef, { date: selectedDateISO, colaborador: nome, tipo: document.getElementById('admin-motivo')?.value, detalhes: "Dia todo", createdAt: Timestamp.now(), createdBy: userId });
+            if (el) el.value = '';
         });
-        document.getElementById('btn-save-admin-event').addEventListener('click', async () => {
-            const nome = document.getElementById('admin-evento').value.trim();
+        document.getElementById('btn-save-admin-event')?.addEventListener('click', async () => {
+            const el = document.getElementById('admin-evento');
+            const nome = el?.value.trim();
             if(!nome) return;
             await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
-            document.getElementById('admin-evento').value = '';
+            if (el) el.value = '';
         });
-        document.getElementById('btn-save-admin-birthday').addEventListener('click', async () => {
-            const nome = document.getElementById('admin-aniversariante').value.trim();
+        document.getElementById('btn-save-admin-birthday')?.addEventListener('click', async () => {
+            const el = document.getElementById('admin-aniversariante');
+            const nome = el?.value.trim();
             if(!nome) return;
             await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
-            document.getElementById('admin-aniversariante').value = '';
+            if (el) el.value = '';
         });
 
         // Listagem no Modal Admin
         function updateRecordsList() {
             const list = document.getElementById('records-list');
+            if(!list) return;
             list.innerHTML = '';
             
             let records = [];
@@ -677,11 +745,13 @@
             else if (currentAdminTab === 'events') records = allEvents.filter(e => e.date === selectedDateISO && e.type !== 'birthday').map(e => ({...e, _category: 'event'}));
             else if (currentAdminTab === 'birthdays') records = allEvents.filter(e => e.date === selectedDateISO && e.type === 'birthday').map(e => ({...e, _category: 'event'}));
 
+            const emptyState = document.getElementById('empty-state');
+
             if (records.length === 0) {
-                document.getElementById('empty-state').classList.remove('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
                 return;
             }
-            document.getElementById('empty-state').classList.add('hidden');
+            if (emptyState) emptyState.classList.add('hidden');
 
             records.forEach(rec => {
                 const isAbsence = rec._category === 'absence';
@@ -689,7 +759,7 @@
                 
                 let cfgLabel = ""; let subText = "";
                 if (isAbsence) {
-                    cfgLabel = typeConfig[rec.tipo]?.label.toUpperCase() || 'AUSÊNCIA';
+                    cfgLabel = typeConfig[rec.tipo]?.label?.toUpperCase() || 'AUSÊNCIA';
                     subText = rec.detalhes;
                 } else {
                     cfgLabel = rec.type === 'birthday' ? 'ANIVERSÁRIO' : 'EVENTO';
@@ -713,22 +783,63 @@
                         </button>
                     </div>
                 `;
-                item.querySelector('.btn-delete').addEventListener('click', async () => {
-                    if (confirm('Deseja excluir este registro?')) {
+                item.querySelector('.btn-delete')?.addEventListener('click', () => {
+                    showConfirmDialog(async () => {
                         const ref = isAbsence ? absencesRef : eventsRef;
                         await deleteDoc(doc(ref, rec.id));
-                    }
+                        showToast("Excluído", "Registro removido com sucesso.");
+                    });
                 });
                 list.appendChild(item);
             });
         }
 
+        // Lógica do Modal de Confirmação customizado
+        let confirmAction = null;
+        function showConfirmDialog(onConfirm) {
+            confirmAction = onConfirm;
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmContent = document.getElementById('confirmModalContent');
+            if (confirmModal) confirmModal.classList.remove('hidden');
+            setTimeout(() => { if(confirmContent) confirmContent.classList.add('modal-enter-active'); }, 10);
+        }
+
+        document.getElementById('btn-cancel-confirm')?.addEventListener('click', () => {
+            const confirmContent = document.getElementById('confirmModalContent');
+            const confirmModal = document.getElementById('confirmModal');
+            if (confirmContent) confirmContent.classList.remove('modal-enter-active');
+            setTimeout(() => { if(confirmModal) confirmModal.classList.add('hidden'); }, 200);
+            confirmAction = null;
+        });
+
+        document.getElementById('btn-accept-confirm')?.addEventListener('click', () => {
+            if (confirmAction) confirmAction();
+            const confirmContent = document.getElementById('confirmModalContent');
+            const confirmModal = document.getElementById('confirmModal');
+            if (confirmContent) confirmContent.classList.remove('modal-enter-active');
+            setTimeout(() => { if(confirmModal) confirmModal.classList.add('hidden'); }, 200);
+            confirmAction = null;
+        });
+
         // --- UTILIDADES ---
         let toastTimer;
-        function showToast(title, msg) {
+        function showToast(title, msg, type = "info") {
             const toast = document.getElementById('notification-toast');
-            document.getElementById('notification-title').textContent = title;
-            document.getElementById('notification-message').textContent = msg;
+            const iconContainer = document.getElementById('toast-icon-container');
+            if(!toast || !iconContainer) return;
+            
+            if (type === "error" || type === "warning") {
+                iconContainer.className = "w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-red-600";
+                iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+            } else {
+                iconContainer.className = "w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600";
+                iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+            }
+
+            const titleEl = document.getElementById('notification-title');
+            const msgEl = document.getElementById('notification-message');
+            if(titleEl) titleEl.textContent = title;
+            if(msgEl) msgEl.textContent = msg;
             
             clearTimeout(toastTimer);
             toast.classList.remove('opacity-0', 'translate-y-full');
@@ -741,6 +852,4 @@
     </script>
 </body>
 </html>
-
-
 
