@@ -32,7 +32,7 @@
         .modal-enter-active { opacity: 1; transform: scale(1); }
     </style>
 </head>
-<body class="p-4 lg:p-8 min-h-screen flex flex-col items-center justify-center">
+<body class="p-4 lg:p-8 min-h-screen flex flex-col items-center justify-center overflow-hidden">
 
     <!-- ========================================== -->
     <!-- TELA 1: BOAS VINDAS -->
@@ -152,7 +152,7 @@
     <!-- ========================================== -->
     <!-- TELA 3: CALENDÁRIO (ADMIN / RESTRITO) -->
     <!-- ========================================== -->
-    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[95vh] self-start mt-4">
+    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[90vh]">
         
         <!-- Cabeçalho (Estilo da Imagem) -->
         <header class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
@@ -215,7 +215,7 @@
             </div>
 
             <!-- Grade do Calendário -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-1">
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-hidden pb-2" style="grid-auto-rows: 1fr;">
                 <!-- Preenchido via JS -->
             </div>
             
@@ -420,9 +420,6 @@
         function switchView(viewName) {
             Object.values(views).forEach(v => v.classList.add('hidden'));
             views[viewName].classList.remove('hidden');
-            // Remove a classe do body que centraliza verticalmente se for pro calendário
-            if (viewName === 'calendar') document.body.classList.replace('justify-center', 'justify-start');
-            else { document.body.classList.replace('justify-start', 'justify-center'); document.body.classList.add('justify-center'); }
         }
 
         document.getElementById('btn-go-form').addEventListener('click', () => {
@@ -547,7 +544,7 @@
             
             for (let i = 0; i < firstDay; i++) {
                 const empty = document.createElement('div');
-                empty.className = "hidden md:block rounded-xl border border-transparent min-h-[120px]";
+                empty.className = "hidden md:block rounded-xl border border-transparent h-full";
                 calendarGrid.appendChild(empty);
             }
             
@@ -558,7 +555,7 @@
                 const isToday = dateISO === todayISO;
 
                 const dayCell = document.createElement('div');
-                dayCell.className = `bg-white border rounded-xl p-2 min-h-[100px] lg:min-h-[120px] cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
+                dayCell.className = `bg-white border rounded-xl p-2 h-full overflow-hidden cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
                 dayCell.dataset.date = dateISO;
                 
                 const dayNum = document.createElement('div');
