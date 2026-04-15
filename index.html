@@ -224,7 +224,7 @@
             </div>
 
             <!-- Grade do Calendário -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-1">
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-2" style="grid-auto-rows: minmax(130px, auto);">
                 <!-- Preenchido via JS -->
             </div>
             
@@ -605,7 +605,7 @@
             
             for (let i = 0; i < firstDay; i++) {
                 const empty = document.createElement('div');
-                empty.className = "hidden md:block rounded-xl border border-transparent min-h-[100px]";
+                empty.className = "hidden md:block rounded-xl border border-transparent h-full";
                 calendarGrid.appendChild(empty);
             }
             
@@ -616,13 +616,18 @@
                 const isToday = dateISO === todayISO;
 
                 const dayCell = document.createElement('div');
-                dayCell.className = `bg-white border rounded-xl p-2 min-h-[100px] cursor-pointer transition-shadow hover:shadow-md flex flex-col ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
+                dayCell.className = `bg-white border rounded-xl p-2 h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-blue-300 flex flex-col group ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
                 dayCell.dataset.date = dateISO;
                 
+                const headerDiv = document.createElement('div');
+                headerDiv.className = "flex justify-center mb-1.5 shrink-0";
+                
                 const dayNum = document.createElement('div');
-                dayNum.className = `text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1 ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`;
+                dayNum.className = `text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`;
                 dayNum.textContent = day;
-                dayCell.appendChild(dayNum);
+                
+                headerDiv.appendChild(dayNum);
+                dayCell.appendChild(headerDiv);
 
                 const pillsContainer = document.createElement('div');
                 pillsContainer.className = "flex-1 space-y-1";
