@@ -8,233 +8,270 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --brand-blue: #002f6c;
+            --brand-accent: #2563eb;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f6f8; /* Fundo cinza bem claro */
+            background-color: #f8fafc; /* Slate 50 */
+            -webkit-font-smoothing: antialiased;
         }
         
-        /* Scrollbar customizado */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        /* Custom Scrollbar - Mais elegante */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         input[type="time"]::-webkit-calendar-picker-indicator,
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; }
         
-        /* Animação suave */
-        .view-enter { animation: fadeIn 0.3s ease-out forwards; }
+        /* Animações */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .modal-enter { opacity: 0; transform: scale(0.95); transition: opacity 200ms ease-out, transform 200ms ease-out; }
+        
+        .modal-enter { opacity: 0; transform: scale(0.97); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .modal-enter-active { opacity: 1; transform: scale(1); }
+        .overlay-enter { opacity: 0; transition: opacity 0.3s ease; }
+        .overlay-enter-active { opacity: 1; }
     </style>
 </head>
-<body class="p-4 lg:p-8 min-h-screen flex flex-col items-center justify-center overflow-hidden">
+<body class="min-h-screen w-full flex flex-col items-center justify-center overflow-hidden relative text-slate-800">
 
     <!-- ========================================== -->
     <!-- TELA 1: BOAS VINDAS -->
     <!-- ========================================== -->
-    <div id="welcome-view" class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-center p-8 space-y-6 view-enter">
-        <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-16 mx-auto object-contain mb-2">
+    <main id="welcome-view" class="w-full max-w-md w-[90%] fade-in flex flex-col items-center">
         
-        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Portal de Ausências</h1>
-        <p class="text-gray-500 text-sm">Registre suas ausências, atestados, banco de horas ou informe sobre eventos e aniversários do setor.</p>
-        
-        <button id="btn-go-form" class="w-full bg-[#2563eb] text-white py-3.5 px-4 rounded-xl font-bold shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-            Preencher Formulário
-        </button>
-
-        <div class="pt-6 border-t border-gray-100 mt-6">
-            <button id="btn-show-admin-login" class="text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2 mx-auto">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Acesso Restrito
+        <!-- Card Principal -->
+        <div class="w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 sm:p-10 flex flex-col items-center text-center relative overflow-hidden">
+            <!-- Decoração de fundo sutil -->
+            <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+            
+            <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-14 sm:h-16 object-contain mb-6">
+            
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-3">Portal de Ausências</h1>
+            <p class="text-slate-500 text-sm leading-relaxed mb-8">
+                Registre suas férias, atestados, banco de horas ou informe eventos do setor de forma rápida e centralizada.
+            </p>
+            
+            <button id="btn-go-form" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+                Preencher Formulário
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </button>
         </div>
-    </div>
+
+        <!-- Acesso Restrito (Fora do card principal para separar hierarquia) -->
+        <button id="btn-show-admin-login" class="mt-8 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            Acesso Administrativo
+        </button>
+    </main>
 
 
     <!-- ========================================== -->
     <!-- TELA 2: FORMULÁRIO PÚBLICO -->
     <!-- ========================================== -->
-    <div id="public-form-view" class="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden view-enter flex-col relative max-h-[calc(100vh-2rem)]">
+    <main id="public-form-view" class="w-full max-w-lg w-[95%] h-[95vh] sm:h-auto max-h-[900px] bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hidden flex-col relative fade-in overflow-hidden">
         
         <!-- Tela de Sucesso Overlay -->
-        <div id="success-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex-col items-center justify-center rounded-2xl transition-all duration-300">
-            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+        <div id="success-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex-col items-center justify-center transition-all duration-300 hidden">
+            <div class="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6 shadow-sm border border-green-100">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900">Sucesso!</h3>
-            <p class="text-gray-500 font-medium mt-2">Registro enviado para o calendário.</p>
+            <h3 class="text-3xl font-bold text-slate-900 tracking-tight">Sucesso!</h3>
+            <p class="text-slate-500 font-medium mt-2">Seu registro foi enviado ao calendário.</p>
         </div>
 
-        <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 rounded-t-2xl">
-            <div class="flex items-center gap-3">
-                <button id="btn-back-welcome" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition">
+        <!-- Cabeçalho do Formulário -->
+        <header class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 relative z-10">
+            <div class="flex items-center gap-4">
+                <button id="btn-back-welcome" class="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2.5 rounded-full transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 </button>
-                <h2 class="text-lg font-bold text-gray-800">Registrar Atividade</h2>
+                <h2 class="text-xl font-bold text-slate-800 tracking-tight">Novo Registro</h2>
             </div>
-            <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-6 w-auto object-contain grayscale opacity-50">
-        </div>
+            <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-6 w-auto object-contain grayscale opacity-30">
+        </header>
 
-        <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+        <!-- Corpo com Rolagem -->
+        <div class="p-6 sm:p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/50">
+            
             <!-- Seleção de Data -->
-            <div>
-                <label for="public-date" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Data do Registro</label>
-                <input type="date" id="public-date" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition text-gray-800 font-medium">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <label for="public-date" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quando?</label>
+                <input type="date" id="public-date" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all text-slate-800 font-medium">
             </div>
 
-            <!-- Tipo de Registro -->
+            <!-- Seleção de Categoria (Tabs) -->
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" data-form-type="absence" class="public-tab-btn active bg-blue-50 text-blue-700 border border-blue-200 py-2 rounded-lg text-sm font-bold transition shadow-sm">Ausência</button>
-                    <button type="button" data-form-type="event" class="public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">Evento</button>
-                    <button type="button" data-form-type="birthday" class="public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">Aniversário</button>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">O que deseja registrar?</label>
+                <div class="bg-slate-100/80 p-1.5 rounded-xl flex gap-1">
+                    <button type="button" data-form-type="absence" class="public-tab-btn flex-1 bg-white text-blue-700 shadow-sm py-2.5 rounded-lg text-sm font-bold transition-all border border-slate-200/50">Ausência</button>
+                    <button type="button" data-form-type="event" class="public-tab-btn flex-1 text-slate-500 hover:text-slate-700 py-2.5 rounded-lg text-sm font-semibold transition-all">Evento</button>
+                    <button type="button" data-form-type="birthday" class="public-tab-btn flex-1 text-slate-500 hover:text-slate-700 py-2.5 rounded-lg text-sm font-semibold transition-all">Aniversário</button>
                 </div>
             </div>
 
-            <!-- Area de Formulários Dinâmicos -->
-            <div id="public-forms-container" class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                <!-- Form Ausência -->
-                <div id="public-form-absence" class="space-y-4">
+            <!-- Formulários Dinâmicos -->
+            <div id="public-forms-container" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                
+                <!-- Ausência -->
+                <div id="public-form-absence" class="space-y-5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Colaborador</label>
-                        <input type="text" id="public-colaborador" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition" placeholder="Nome completo">
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">Colaborador</label>
+                        <input type="text" id="public-colaborador" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400" placeholder="Nome completo">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Motivo</label>
-                        <select id="public-tipo-ausencia" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition">
-                            <option value="ferias">🌴 Férias</option>
-                            <option value="medical">🩺 Atestado Médico</option>
-                            <option value="time_bank">⏱️ Banco de Horas</option>
-                            <option value="personal">👤 Motivo Pessoal</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2 pt-1">
-                        <input type="checkbox" id="public-diatodo" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="public-diatodo" class="text-sm font-semibold text-gray-700">Ocorrerá o dia todo</label>
-                    </div>
-                    <div id="public-time-fields" class="grid grid-cols-2 gap-3 hidden">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Início</label>
-                            <input type="time" id="public-hora-inicio" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Fim</label>
-                            <input type="time" id="public-hora-fim" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500">
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">Motivo da Ausência</label>
+                        <div class="relative">
+                            <select id="public-tipo-ausencia" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none pr-10">
+                                <option value="ferias">🌴 Férias</option>
+                                <option value="medical">🩺 Atestado Médico</option>
+                                <option value="time_bank">⏱️ Banco de Horas</option>
+                                <option value="personal">👤 Motivo Pessoal</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
                         </div>
                     </div>
+                    
+                    <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-4">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="public-diatodo" checked class="w-5 h-5 border-2 border-slate-300 rounded text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer peer">
+                            </div>
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Ocorrerá o dia todo</span>
+                        </label>
+                        
+                        <div id="public-time-fields" class="grid grid-cols-2 gap-4 hidden pt-2 border-t border-slate-200/60">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Início</label>
+                                <input type="time" id="public-hora-inicio" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Fim</label>
+                                <input type="time" id="public-hora-fim" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                            </div>
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Observação <span class="font-normal text-gray-400">(Opcional)</span></label>
-                        <textarea id="public-observacao" rows="2" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 transition" placeholder="Detalhes..."></textarea>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">Observação <span class="font-normal text-slate-400 text-xs ml-1">(Opcional)</span></label>
+                        <textarea id="public-observacao" rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400" placeholder="Ex: Retorno após o almoço..."></textarea>
                     </div>
                 </div>
 
-                <!-- Form Evento -->
-                <div id="public-form-event" class="space-y-4 hidden">
+                <!-- Evento -->
+                <div id="public-form-event" class="space-y-5 hidden">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Nome do Evento</label>
-                        <input type="text" id="public-event-name" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500" placeholder="Ex: Feriado Nacional">
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">Nome do Evento</label>
+                        <input type="text" id="public-event-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="Ex: Treinamento Geral, Feriado...">
                     </div>
                 </div>
 
-                <!-- Form Aniversário -->
-                <div id="public-form-birthday" class="space-y-4 hidden">
+                <!-- Aniversário -->
+                <div id="public-form-birthday" class="space-y-5 hidden">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Nome do Aniversariante</label>
-                        <input type="text" id="public-birthday-name" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-1 focus:ring-blue-500" placeholder="Nome do colega">
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">Nome do Aniversariante</label>
+                        <input type="text" id="public-birthday-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="Nome do colega">
                     </div>
-                </div>
-            </div>
-
-            <button id="btn-submit-public" class="w-full bg-[#16a34a] text-white py-3.5 px-4 rounded-xl font-bold shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                Confirmar e Salvar
-            </button>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TELA 3: CALENDÁRIO (ADMIN / RESTRITO) -->
-    <!-- ========================================== -->
-    <div id="calendar-view" class="w-full max-w-[1200px] flex flex-col gap-4 hidden view-enter h-[95vh] self-start mt-4">
-        
-        <!-- Cabeçalho (Estilo da Imagem) -->
-        <header class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-            <div class="flex items-center gap-5">
-                <div class="flex items-center">
-                    <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-10 w-auto object-contain">
-                </div>
-                
-                <div class="h-10 w-px bg-gray-200 hidden sm:block"></div>
-                
-                <div>
-                    <h1 class="text-xl font-bold text-gray-800 tracking-tight">Gestão de Ausências</h1>
-                    <p class="text-sm text-gray-500 font-medium mt-0.5">Controle de Férias e Escalas</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-4">
-                <div class="bg-green-50 border border-green-100 text-green-600 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]"></span> 
-                    Sistema Online
+            <!-- Botão de Envio (Fica no final do scroll) -->
+            <div class="pt-2 pb-6">
+                <button id="btn-submit-public" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    Confirmar e Salvar
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- ========================================== -->
+    <!-- TELA 3: CALENDÁRIO (ADMIN) -->
+    <!-- ========================================== -->
+    <main id="calendar-view" class="w-full h-screen p-4 sm:p-6 flex flex-col gap-4 hidden fade-in max-w-[1400px] mx-auto">
+        
+        <!-- Header do Calendário -->
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+            <div class="flex items-center gap-5">
+                <img src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" alt="Doremus" class="h-8 sm:h-10 w-auto object-contain">
+                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight leading-tight">Visão Geral</h1>
+                    <p class="text-xs text-slate-500 font-medium">Controle de Escalas e Ausências</p>
                 </div>
-                <button id="btn-logout-admin" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition" title="Sair do Modo Admin">
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="bg-green-50/80 border border-green-200/60 text-green-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e]"></span> 
+                    Sincronizado
+                </div>
+                <button id="btn-logout-admin" class="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors border border-transparent hover:border-slate-200" title="Sair">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
             </div>
         </header>
 
-        <!-- Calendário Principal -->
-        <main class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col min-h-0">
+        <!-- Corpo Principal do Calendário -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 flex-1 flex flex-col min-h-0 overflow-hidden">
             
-            <!-- Controles do Mês -->
-            <div class="flex justify-between items-center mb-6 shrink-0">
-                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                    <button id="prev-month" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 transition">
+            <!-- Barra de Navegação dos Meses -->
+            <div class="p-4 sm:px-6 sm:py-5 border-b border-slate-100 flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 shrink-0 bg-white z-10">
+                <div class="flex items-center bg-slate-50 border border-slate-200/80 rounded-xl p-1 shadow-sm w-full sm:w-auto justify-between">
+                    <button id="prev-month" class="px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-sm text-slate-600 transition-all focus:outline-none">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
-                    <div id="month-year" class="px-6 py-2 font-bold text-gray-800 text-sm border-x border-gray-200 min-w-[160px] text-center capitalize">
-                        <!-- Preenchido via JS -->
+                    <div id="month-year" class="px-4 font-bold text-slate-800 text-sm min-w-[140px] text-center capitalize tracking-wide">
+                        --
                     </div>
-                    <button id="next-month" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 transition">
+                    <button id="next-month" class="px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-sm text-slate-600 transition-all focus:outline-none">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
                 
-                <button class="flex items-center gap-2 border border-gray-200 bg-white px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium shadow-sm transition">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Legenda
+                <button class="hidden sm:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm transition-all focus:outline-none">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Filtros / Legenda
                 </button>
             </div>
 
-            <!-- Dias da Semana -->
-            <div class="grid grid-cols-7 gap-4 text-center mb-2 shrink-0">
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">DOM</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SEG</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">TER</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">QUA</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">QUI</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SEX</div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">SÁB</div>
+            <!-- Header dos Dias da Semana -->
+            <div class="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50 shrink-0 min-w-[700px] overflow-hidden">
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">DOM</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">SEG</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">TER</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">QUA</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">QUI</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">SEX</div>
+                <div class="py-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">SÁB</div>
             </div>
 
-            <!-- Grade do Calendário -->
-            <div id="calendar-grid" class="grid grid-cols-7 gap-3 lg:gap-4 flex-1 overflow-y-auto custom-scrollbar pb-2 pr-2" style="grid-auto-rows: minmax(130px, auto);">
-                <!-- Preenchido via JS -->
+            <!-- Container Rolável da Grade -->
+            <div class="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-slate-50/30">
+                <!-- A grade cresce linha por linha automaticamente -->
+                <div id="calendar-grid" class="grid grid-cols-7 min-w-[700px] bg-slate-100 gap-px p-px" style="grid-auto-rows: minmax(140px, auto);">
+                    <!-- JavaScript Injeta os dias aqui -->
+                </div>
             </div>
             
-        </main>
+        </div>
 
-        <!-- Botão Flutuante -->
-        <button id="btn-fab-add" class="fixed bottom-8 right-8 w-14 h-14 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center justify-center focus:outline-none z-10" aria-label="Adicionar">
+        <!-- Botão Flutuante Rápido -->
+        <button id="btn-fab-add" class="fixed bottom-6 right-6 sm:bottom-10 sm:right-10 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:scale-105 hover:shadow-xl transition-all flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-blue-500/30 z-10" aria-label="Adicionar Rápido">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
         </button>
-    </div>
+    </main>
 
 
     <!-- ========================================== -->
@@ -242,85 +279,108 @@
     <!-- ========================================== -->
 
     <!-- Modal de Senha (Admin Login) -->
-    <div id="passwordModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 space-y-5 modal-enter" id="passwordModalContent">
+    <div id="passwordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm overlay-enter" id="passwordModalBg"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 space-y-6 modal-enter relative z-10" id="passwordModalContent">
             <div class="text-center">
-                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <div class="w-14 h-14 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 transform rotate-3">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </div>
-                <h3 class="text-xl font-bold text-gray-800">Acesso Restrito</h3>
-                <p class="text-sm text-gray-500 mt-1">Insira a senha para ver o calendário.</p>
+                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Área Restrita</h3>
+                <p class="text-sm text-slate-500 mt-2">Insira a senha mestra para visualizar o controle completo.</p>
             </div>
             <div>
-                <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-xl tracking-[0.2em] font-mono">
+                <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-center text-2xl tracking-[0.3em] font-mono transition-all text-slate-700">
             </div>
-            <div class="flex items-center gap-3 mt-4 pt-2">
-                <button id="cancel-password" class="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition">Cancelar</button>
-                <button id="submit-password" class="flex-1 py-3 text-sm font-bold text-white bg-[#2563eb] rounded-xl shadow-sm hover:bg-blue-700 transition">Acessar</button>
+            <div class="flex items-center gap-3 mt-2">
+                <button id="cancel-password" class="flex-1 py-3.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Voltar</button>
+                <button id="submit-password" class="flex-1 py-3.5 text-sm font-bold text-white bg-blue-600 rounded-xl shadow-sm hover:bg-blue-700 transition-colors">Acessar</button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Detalhes do Dia (Admin) -->
-    <div id="dayModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div id="modalContent" class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] modal-enter">
+    <div id="dayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm overlay-enter" id="dayModalBg"></div>
+        <div id="modalContent" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] modal-enter relative z-10 border border-slate-100">
             
-            <!-- Cabeçalho do Modal -->
-            <div class="px-6 py-5 border-b border-gray-100 flex items-start justify-between bg-white relative z-10">
+            <!-- Cabeçalho -->
+            <div class="px-6 py-6 border-b border-slate-100 flex items-start justify-between bg-white relative z-10">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="modal-date-title">15 de abril de 2026</h3>
-                    <p class="text-sm text-gray-500 mt-0.5 font-medium">Gerencie ausências e eventos.</p>
+                    <h3 class="text-2xl font-bold text-slate-900 tracking-tight" id="modal-date-title">Data</h3>
+                    <p class="text-sm text-slate-500 mt-1 font-medium">Gestão de registros.</p>
                 </div>
-                <button id="close-modal" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 p-1.5 rounded-full transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button id="close-modal" class="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <!-- Abas -->
-            <div class="px-6 pt-2 border-b border-gray-100 bg-white">
-                <div class="flex space-x-6">
-                    <button class="modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb]" data-tab="absences">Ausências</button>
-                    <button class="modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="events">Eventos</button>
-                    <button class="modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="birthdays">Aniversários</button>
-                </div>
-            </div>
-
-            <!-- Corpo do Modal com Scroll -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white space-y-8">
+            <div class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 flex flex-col">
                 
-                <!-- SESSÃO DE FORMULÁRIO RÁPIDO (Apenas Visual Admin) -->
-                <div id="form-section">
-                    <h4 class="text-xs font-bold text-[#2563eb] tracking-widest uppercase mb-4" id="form-title">Nova Ausência</h4>
-                    
-                    <div id="admin-form-absences" class="space-y-4 admin-form-content">
-                        <div>
-                            <input type="text" id="admin-colaborador" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Nome completo">
-                        </div>
-                        <div class="flex gap-2">
-                            <select id="admin-motivo" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500">
-                                <option value="ferias">Férias</option><option value="medical">Atestado</option>
-                                <option value="time_bank">Banco Horas</option><option value="personal">Pessoal</option>
-                            </select>
-                            <button id="btn-save-admin-absence" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
-                        </div>
-                    </div>
-
-                    <div id="admin-form-events" class="space-y-4 admin-form-content hidden flex gap-2">
-                        <input type="text" id="admin-evento" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Nome do Evento">
-                        <button id="btn-save-admin-event" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
-                    </div>
-
-                    <div id="admin-form-birthdays" class="space-y-4 admin-form-content hidden flex gap-2">
-                        <input type="text" id="admin-aniversariante" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" placeholder="Aniversariante">
-                        <button id="btn-save-admin-birthday" class="bg-[#2563eb] text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition">Salvar</button>
+                <!-- Abas -->
+                <div class="px-6 pt-4 bg-white border-b border-slate-100 shadow-sm shrink-0">
+                    <div class="flex space-x-6">
+                        <button class="modal-tab-btn active pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600" data-tab="absences">Ausências</button>
+                        <button class="modal-tab-btn pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors" data-tab="events">Eventos</button>
+                        <button class="modal-tab-btn pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors" data-tab="birthdays">Aniversários</button>
                     </div>
                 </div>
 
-                <!-- SESSÃO DE LISTAGEM -->
-                <div class="flex flex-col">
-                    <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3 border-b border-gray-100 pb-2 shrink-0">Registros do dia selecionado</h4>
-                    <p class="text-sm text-gray-400 py-4 text-center italic shrink-0" id="empty-state">Nenhum registro para este dia.</p>
-                    <div id="records-list" class="space-y-0 overflow-y-auto custom-scrollbar pr-2 max-h-[40vh]"></div>
+                <!-- Formulário Rápido Admin -->
+                <div id="form-section" class="p-6 pb-2 shrink-0">
+                    <h4 class="text-[11px] font-bold text-blue-600 tracking-widest uppercase mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <span id="form-title">Adicionar Registro</span>
+                    </h4>
+                    
+                    <div id="admin-form-absences" class="space-y-3 admin-form-content">
+                        <input type="text" id="admin-colaborador" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 shadow-sm" placeholder="Nome completo do colaborador">
+                        <select id="admin-motivo" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm">
+                            <option value="ferias">Férias</option><option value="medical">Atestado Médico</option>
+                            <option value="time_bank">Banco Horas</option><option value="personal">Motivo Pessoal</option>
+                        </select>
+                        <div class="bg-slate-50/50 rounded-xl border border-slate-200/60 p-3 space-y-3 shadow-sm">
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" id="admin-diatodo" checked class="w-4 h-4 border-2 border-slate-300 rounded text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer">
+                                <span class="text-xs font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Ocorrerá o dia todo</span>
+                            </label>
+                            <div id="admin-time-fields" class="grid grid-cols-2 gap-3 hidden pt-2 border-t border-slate-200/60">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Início</label>
+                                    <input type="time" id="admin-hora-inicio" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Fim</label>
+                                    <input type="time" id="admin-hora-fim" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                                </div>
+                            </div>
+                        </div>
+                        <button id="btn-save-admin-absence" class="w-full bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm shadow hover:bg-slate-900 transition-colors">Salvar Ausência</button>
+                    </div>
+
+                    <div id="admin-form-events" class="space-y-3 admin-form-content hidden flex gap-2">
+                        <input type="text" id="admin-evento" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm" placeholder="Título do Evento">
+                        <button id="btn-save-admin-event" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm shadow hover:bg-slate-900 transition-colors">Salvar</button>
+                    </div>
+
+                    <div id="admin-form-birthdays" class="space-y-3 admin-form-content hidden flex gap-2">
+                        <input type="text" id="admin-aniversariante" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm" placeholder="Nome do Aniversariante">
+                        <button id="btn-save-admin-birthday" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm shadow hover:bg-slate-900 transition-colors">Salvar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Registros -->
+                <div class="flex-1 flex flex-col p-6 pt-4 min-h-0">
+                    <h4 class="text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-3 flex items-center gap-2 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        Lista de hoje
+                    </h4>
+                    
+                    <div class="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex-1 flex flex-col overflow-hidden">
+                        <p class="text-sm text-slate-400 py-8 text-center italic shrink-0 hidden" id="empty-state">Nenhum dado encontrado.</p>
+                        <!-- A rolagem entra apenas aqui dentro se a lista for muito longa -->
+                        <div id="records-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+                    </div>
                 </div>
 
             </div>
@@ -328,31 +388,32 @@
     </div>
 
     <!-- Notificação "Toast" -->
-    <div id="notification-toast" class="fixed bottom-5 right-5 w-full max-w-sm bg-white shadow-xl rounded-2xl border border-gray-100 pointer-events-auto overflow-hidden z-[100] transform translate-y-full opacity-0 transition-all duration-300">
-        <div class="p-4 flex items-start gap-3">
-            <div class="flex-shrink-0 mt-0.5">
-                <div id="toast-icon-container" class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <div id="notification-toast" class="fixed top-5 right-5 sm:bottom-5 sm:top-auto w-[90%] max-w-[320px] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl border border-slate-100 pointer-events-auto overflow-hidden z-[100] transform transition-all duration-400 opacity-0 translate-y-[-20px] sm:translate-y-10">
+        <div class="p-4 flex items-center gap-4">
+            <div class="flex-shrink-0">
+                <div id="toast-icon-container" class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                    <!-- Icone Injetado -->
                 </div>
             </div>
             <div class="flex-1">
-                <p class="text-sm font-bold text-gray-900" id="notification-title">Aviso</p>
-                <p class="text-sm text-gray-500" id="notification-message">Operação realizada.</p>
+                <p class="text-sm font-bold text-slate-900" id="notification-title">Aviso</p>
+                <p class="text-xs text-slate-500 font-medium" id="notification-message">Operação realizada.</p>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Confirmação (Substitui o window.confirm) -->
-    <div id="confirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-[200]">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center modal-enter" id="confirmModalContent">
-            <div class="w-14 h-14 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    <!-- Modal de Confirmação Exclusão -->
+    <div id="confirmModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm overlay-enter" id="confirmModalBg"></div>
+        <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm text-center modal-enter relative z-10" id="confirmModalContent">
+            <div class="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-5 border border-red-100">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </div>
-            <h3 class="text-lg font-bold text-gray-900 mb-2">Excluir Registro?</h3>
-            <p class="text-sm text-gray-500 mb-6">Esta ação não pode ser desfeita.</p>
+            <h3 class="text-xl font-bold text-slate-900 tracking-tight mb-2">Excluir Registro?</h3>
+            <p class="text-sm text-slate-500 mb-8 leading-relaxed">Você tem certeza? Essa informação será removida permanentemente do calendário.</p>
             <div class="flex gap-3">
-                <button id="btn-cancel-confirm" class="flex-1 py-3 text-sm font-bold text-gray-700 bg-gray-50 rounded-xl hover:bg-gray-100 transition">Cancelar</button>
-                <button id="btn-accept-confirm" class="flex-1 py-3 text-sm font-bold text-white bg-red-600 rounded-xl shadow-sm hover:bg-red-700 transition">Excluir</button>
+                <button id="btn-cancel-confirm" class="flex-1 py-3.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Cancelar</button>
+                <button id="btn-accept-confirm" class="flex-1 py-3.5 text-sm font-bold text-white bg-red-500 rounded-xl shadow-sm hover:bg-red-600 transition-colors">Sim, Excluir</button>
             </div>
         </div>
     </div>
@@ -362,18 +423,21 @@
     <!-- ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURAÇÃO ORIGINAL DO SEU BANCO DE DADOS (Para manter os dados antigos)
-        const firebaseConfig = {
-          apiKey: "AIzaSyCe8E7k7vsCRZM9wybNqj7M7UXLpuYcis8",
-          authDomain: "calendariodeausencias.firebaseapp.com",
-          projectId: "calendariodeausencias",
-          storageBucket: "calendariodeausencias.firebasestorage.app",
-          messagingSenderId: "574582108917",
-          appId: "1:574582108917:web:6491a2ea49e6aa13038bbc",
-          measurementId: "G-DGWE7SVBYX"
+        // Detecção de Ambiente para evitar erros de permissão
+        const isTestingEnv = typeof __firebase_config !== 'undefined';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Usa as configurações corretas baseadas no ambiente
+        const firebaseConfig = isTestingEnv ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyCe8E7k7vsCRZM9wybNqj7M7UXLpuYcis8",
+            authDomain: "calendariodeausencias.firebaseapp.com",
+            projectId: "calendariodeausencias",
+            storageBucket: "calendariodeausencias.firebasestorage.app",
+            messagingSenderId: "574582108917",
+            appId: "1:574582108917:web:6491a2ea49e6aa13038bbc"
         };
         
         let db, auth, userId;
@@ -387,20 +451,20 @@
         let currentAdminTab = 'absences';
         const ADMIN_PASSWORD = "paula2025"; 
 
-        // Dicionário de Tipos para UI
+        // Cores no estilo da imagem referência
         const typeConfig = {
-            'ferias': { label: 'Férias', pillColor: 'border-[#14b8a6] text-[#0f766e] bg-[#f0fdfa]' }, // Teal
-            'medical': { label: 'Atestado', pillColor: 'border-[#ef4444] text-[#b91c1c] bg-[#fef2f2]' }, // Red
-            'time_bank': { label: 'Banco Horas', pillColor: 'border-[#3b82f6] text-[#1d4ed8] bg-[#eff6ff]' }, // Blue
-            'personal': { label: 'Pessoal', pillColor: 'border-[#f97316] text-[#c2410c] bg-[#fff7ed]' }, // Orange
-            'general': { label: 'Evento', pillColor: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple (Old config compatibility)
-            'event': { label: 'Evento', pillColor: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple
-            'birthday': { label: 'Aniversário', pillColor: 'border-[#ec4899] text-[#be185d] bg-[#fdf2f8]' } // Pink
+            'ferias': { label: 'Férias', style: 'border-[#14b8a6] text-[#0f766e] bg-[#f0fdfa]' }, // Teal
+            'medical': { label: 'Atestado', style: 'border-[#ef4444] text-[#b91c1c] bg-[#fef2f2]' }, // Red
+            'time_bank': { label: 'Banco Horas', style: 'border-[#3b82f6] text-[#1d4ed8] bg-[#eff6ff]' }, // Blue
+            'personal': { label: 'Pessoal', style: 'border-[#f97316] text-[#c2410c] bg-[#fff7ed]' }, // Orange
+            'general': { label: 'Evento', style: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple
+            'event': { label: 'Evento', style: 'border-[#a855f7] text-[#7e22ce] bg-[#faf5ff]' }, // Purple
+            'birthday': { label: 'Aniversário', style: 'border-[#ec4899] text-[#be185d] bg-[#fdf2f8]' } // Pink
         };
 
         const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-        // Elementos DOM - Views
+        // Views
         const views = {
             welcome: document.getElementById('welcome-view'),
             publicForm: document.getElementById('public-form-view'),
@@ -413,50 +477,63 @@
             auth = getAuth(app);
             db = getFirestore(app);
 
-            try {
-                await signInAnonymously(auth);
-            } catch (e) { console.error("Auth error:", e); showToast("Erro", "Falha na conexão com servidor.", "error"); }
+            try { 
+                if (isTestingEnv && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth); 
+                }
+            } catch (e) { 
+                console.error("Auth error:", e);
+                showToast("Erro", "Conexão falhou.", "error"); 
+            }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
                     
-                    // Restabelecendo o caminho original para recuperar seus dados e evitar erros de permissão
-                    absencesRef = collection(db, 'absences');
-                    eventsRef = collection(db, 'events');
+                    // Condição para usar o banco de testes quando rodando na plataforma
+                    // e seu banco de dados oficial quando exportar o código.
+                    if (isTestingEnv) {
+                        absencesRef = collection(db, 'artifacts', appId, 'public', 'data', 'absences');
+                        eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'events');
+                    } else {
+                        absencesRef = collection(db, 'absences');
+                        eventsRef = collection(db, 'events');
+                    }
                     
                     onSnapshot(query(absencesRef), (snap) => {
                         allAbsences = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        renderCalendar();
-                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
+                        renderCalendarGrid();
+                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateAdminRecordsList();
+                    }, (err) => {
+                        console.error("Firestore Error:", err);
+                        if (err.code === 'permission-denied' && !isTestingEnv) {
+                            showToast("Erro de Permissão", "Suas regras do Firebase estão bloqueando o acesso.", "error");
+                        }
                     });
                     
                     onSnapshot(query(eventsRef), (snap) => {
                         allEvents = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        renderCalendar();
-                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateRecordsList();
-                    });
+                        renderCalendarGrid();
+                        if(document.getElementById('dayModal') && !document.getElementById('dayModal').classList.contains('hidden')) updateAdminRecordsList();
+                    }, (err) => { console.error("Firestore Error:", err); });
                 }
             });
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS ---
+        // --- NAVEGAÇÃO DE TELAS ---
         function switchView(viewName) {
             Object.values(views).forEach(v => {
                 if(v) {
                     v.classList.add('hidden');
-                    if (v.id === 'public-form-view') v.classList.remove('flex');
+                    v.classList.remove('flex');
                 }
             });
-            
             if (views[viewName]) {
                 views[viewName].classList.remove('hidden');
-                if (viewName === 'publicForm') views[viewName].classList.add('flex');
+                views[viewName].classList.add('flex');
             }
-            
-            // Remove a classe do body que centraliza verticalmente se for pro calendário
-            if (viewName === 'calendar') document.body.classList.replace('justify-center', 'justify-start');
-            else { document.body.classList.replace('justify-start', 'justify-center'); document.body.classList.add('justify-center'); }
         }
 
         document.getElementById('btn-go-form')?.addEventListener('click', () => {
@@ -467,54 +544,56 @@
         document.getElementById('btn-back-welcome')?.addEventListener('click', () => switchView('welcome'));
         document.getElementById('btn-logout-admin')?.addEventListener('click', () => switchView('welcome'));
 
-        // --- LOGIN ADMIN ---
+        // --- LÓGICA DO LOGIN ADMIN ---
         const passwordModal = document.getElementById('passwordModal');
         const passwordContent = document.getElementById('passwordModalContent');
+        const passwordBg = document.getElementById('passwordModalBg');
         
         document.getElementById('btn-show-admin-login')?.addEventListener('click', () => {
-            const adminPass = document.getElementById('admin-password');
-            if (adminPass) adminPass.value = '';
+            const passInput = document.getElementById('admin-password');
+            if (passInput) passInput.value = '';
             if (passwordModal) passwordModal.classList.remove('hidden');
             setTimeout(() => {
+                if (passwordBg) passwordBg.classList.add('overlay-enter-active');
                 if (passwordContent) passwordContent.classList.add('modal-enter-active');
-                if (adminPass) adminPass.focus();
+                if (passInput) passInput.focus();
             }, 10);
         });
 
-        function closePasswordModal() {
+        function hidePasswordModal() {
+            if (passwordBg) passwordBg.classList.remove('overlay-enter-active');
             if (passwordContent) passwordContent.classList.remove('modal-enter-active');
-            setTimeout(() => {
-                if (passwordModal) passwordModal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => { if (passwordModal) passwordModal.classList.add('hidden'); }, 300);
         }
-        document.getElementById('cancel-password')?.addEventListener('click', closePasswordModal);
+        document.getElementById('cancel-password')?.addEventListener('click', hidePasswordModal);
 
-        function checkAdminPassword() {
-            const adminPass = document.getElementById('admin-password');
-            if (adminPass && adminPass.value === ADMIN_PASSWORD) {
-                closePasswordModal();
+        function verifyAdminPassword() {
+            const passInput = document.getElementById('admin-password');
+            if (passInput && passInput.value === ADMIN_PASSWORD) {
+                hidePasswordModal();
                 switchView('calendar');
-                renderCalendar();
+                renderCalendarGrid();
             } else {
-                showToast("Erro", "Senha incorreta.");
-                if (adminPass) adminPass.value = '';
+                showToast("Negado", "Senha incorreta.", "error");
+                if (passInput) passInput.value = '';
             }
         }
-        document.getElementById('submit-password')?.addEventListener('click', checkAdminPassword);
-        document.getElementById('admin-password')?.addEventListener('keyup', (e) => { if (e.key === 'Enter') checkAdminPassword(); });
+        document.getElementById('submit-password')?.addEventListener('click', verifyAdminPassword);
+        document.getElementById('admin-password')?.addEventListener('keyup', (e) => { if (e.key === 'Enter') verifyAdminPassword(); });
 
-        // --- LÓGICA DO FORMULÁRIO PÚBLICO ---
+        // --- FORMULÁRIO PÚBLICO LÓGICA ---
         document.querySelectorAll('.public-tab-btn').forEach(btn => {
-            btn?.addEventListener('click', (e) => {
+            btn?.addEventListener('click', () => {
                 document.querySelectorAll('.public-tab-btn').forEach(b => {
-                    b.className = "public-tab-btn bg-white text-gray-500 border border-gray-200 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm";
+                    b.className = "public-tab-btn flex-1 text-slate-500 hover:text-slate-700 py-2.5 rounded-lg text-sm font-semibold transition-all";
                 });
-                btn.className = "public-tab-btn active bg-blue-50 text-blue-700 border border-blue-200 py-2 rounded-lg text-sm font-bold transition shadow-sm";
+                btn.className = "public-tab-btn flex-1 bg-white text-blue-700 shadow-sm py-2.5 rounded-lg text-sm font-bold transition-all border border-slate-200/50";
                 
                 currentPublicTab = btn.dataset.formType;
-                document.getElementById('public-form-absence')?.classList.add('hidden');
-                document.getElementById('public-form-event')?.classList.add('hidden');
-                document.getElementById('public-form-birthday')?.classList.add('hidden');
+                ['absence', 'event', 'birthday'].forEach(type => {
+                    const el = document.getElementById(`public-form-${type}`);
+                    if (el) el.classList.add('hidden');
+                });
                 document.getElementById(`public-form-${currentPublicTab}`)?.classList.remove('hidden');
             });
         });
@@ -524,27 +603,27 @@
         });
 
         document.getElementById('btn-submit-public')?.addEventListener('click', async () => {
-            if (!userId) return showToast("Aguarde", "Conectando ao servidor...", "warning");
+            if (!userId) return showToast("Aguarde", "Conectando ao banco de dados...", "warning");
             
             const dateInput = document.getElementById('public-date');
-            if (!dateInput || !dateInput.value) return showToast("Atenção", "Selecione a data do registro.", "warning");
+            if (!dateInput || !dateInput.value) return showToast("Atenção", "Selecione uma data válida.", "warning");
             const dateVal = dateInput.value;
 
             const btn = document.getElementById('btn-submit-public');
-            const originalText = btn ? btn.innerHTML : "Salvar";
-            if (btn) { btn.innerHTML = "Salvando..."; btn.disabled = true; }
+            const origHTML = btn ? btn.innerHTML : "Salvar";
+            if (btn) { btn.innerHTML = "Enviando..."; btn.disabled = true; }
 
             try {
                 if (currentPublicTab === 'absence') {
                     const nome = document.getElementById('public-colaborador')?.value.trim();
-                    if (!nome) throw new Error("Preencha seu nome.");
-                    let detalhes = "Dia todo";
+                    if (!nome) throw new Error("Insira seu nome completo.");
                     
+                    let detalhes = "Dia todo";
                     const isAllDay = document.getElementById('public-diatodo')?.checked;
                     if (!isAllDay) {
                         const i = document.getElementById('public-hora-inicio')?.value;
                         const f = document.getElementById('public-hora-fim')?.value;
-                        if (!i || !f) throw new Error("Preencha os horários de início e fim.");
+                        if (!i || !f) throw new Error("Informe a hora de início e fim.");
                         detalhes = `Das ${i} às ${f}`;
                     }
                     await addDoc(absencesRef, {
@@ -560,197 +639,254 @@
 
                 } else if (currentPublicTab === 'event') {
                     const nome = document.getElementById('public-event-name')?.value.trim();
-                    if (!nome) throw new Error("Preencha o nome do evento.");
+                    if (!nome) throw new Error("Insira o título do evento.");
                     await addDoc(eventsRef, { date: dateVal, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
                     if(document.getElementById('public-event-name')) document.getElementById('public-event-name').value = '';
                 } else if (currentPublicTab === 'birthday') {
                     const nome = document.getElementById('public-birthday-name')?.value.trim();
-                    if (!nome) throw new Error("Preencha o nome do aniversariante.");
+                    if (!nome) throw new Error("Insira o nome do aniversariante.");
                     await addDoc(eventsRef, { date: dateVal, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
                     if(document.getElementById('public-birthday-name')) document.getElementById('public-birthday-name').value = '';
                 }
                 
-                // Mostrar overlay de sucesso
                 const overlay = document.getElementById('success-overlay');
                 if(overlay) {
-                    overlay.classList.remove('hidden');
-                    overlay.classList.add('flex');
-                    
+                    overlay.classList.remove('hidden'); overlay.classList.add('flex');
                     setTimeout(() => {
-                        overlay.classList.add('hidden');
-                        overlay.classList.remove('flex');
+                        overlay.classList.add('hidden'); overlay.classList.remove('flex');
                         switchView('welcome');
-                    }, 2000);
+                    }, 2200);
                 }
 
-            } catch (err) { showToast("Atenção", err.message, "error"); } 
-            finally { if(btn) { btn.innerHTML = originalText; btn.disabled = false; } }
+            } catch (err) { showToast("Campo Obrigatório", err.message, "error"); } 
+            finally { if(btn) { btn.innerHTML = origHTML; btn.disabled = false; } }
         });
 
 
-        // --- CALENDÁRIO CORE (Modo Admin) ---
+        // --- CALENDÁRIO CORE (RENDERIZAÇÃO) ---
         const calendarGrid = document.getElementById('calendar-grid');
-        function renderCalendar() {
+        function renderCalendarGrid() {
             if (views.calendar && views.calendar.classList.contains('hidden')) return;
             if (!calendarGrid) return;
 
             calendarGrid.innerHTML = '';
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
-            const monthYearEl = document.getElementById('month-year');
-            if (monthYearEl) monthYearEl.textContent = `${monthNames[month]} de ${year}`;
+            const titleEl = document.getElementById('month-year');
+            if (titleEl) titleEl.textContent = `${monthNames[month]} de ${year}`;
             
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            for (let i = 0; i < firstDay; i++) {
-                const empty = document.createElement('div');
-                empty.className = "hidden md:block rounded-xl border border-transparent h-full";
-                calendarGrid.appendChild(empty);
-            }
-            
             const todayISO = new Date().toISOString().split('T')[0];
 
+            // Dias Vazios (Offset)
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = "bg-white/40 h-full w-full pointer-events-none";
+                calendarGrid.appendChild(empty);
+            }
+
+            // Dias Reais
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateISO = new Date(year, month, day).toISOString().split('T')[0];
                 const isToday = dateISO === todayISO;
 
-                const dayCell = document.createElement('div');
-                dayCell.className = `bg-white border rounded-xl p-2 h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-blue-300 flex flex-col group ${isToday ? 'border-blue-400 shadow-sm ring-1 ring-blue-400' : 'border-gray-100 shadow-sm'}`;
-                dayCell.dataset.date = dateISO;
+                const cell = document.createElement('div');
+                cell.className = `bg-white h-full w-full p-2.5 flex flex-col cursor-pointer transition-colors hover:bg-blue-50/50 group ${isToday ? 'bg-blue-50/30' : ''}`;
+                cell.dataset.date = dateISO;
                 
-                const headerDiv = document.createElement('div');
-                headerDiv.className = "flex justify-center mb-1.5 shrink-0";
+                // Head (Número do Dia)
+                const header = document.createElement('div');
+                header.className = "flex justify-center mb-2 shrink-0";
                 
-                const dayNum = document.createElement('div');
-                dayNum.className = `text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`;
-                dayNum.textContent = day;
-                
-                headerDiv.appendChild(dayNum);
-                dayCell.appendChild(headerDiv);
+                const num = document.createElement('div');
+                num.className = `text-[13px] font-bold w-7 h-7 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-blue-600 text-white shadow-sm ring-4 ring-blue-100' : 'text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-100/50'}`;
+                num.textContent = day;
+                header.appendChild(num);
+                cell.appendChild(header);
 
-                const pillsContainer = document.createElement('div');
-                pillsContainer.className = "flex-1 space-y-1";
+                // Container Pílulas
+                const pills = document.createElement('div');
+                pills.className = "flex-1 flex flex-col gap-1.5";
 
-                // Renderiza Ausências
                 allAbsences.filter(a => a.date === dateISO).forEach(a => {
-                    const cfg = typeConfig[a.tipo] || typeConfig['ferias'];
+                    const styleClass = typeConfig[a.tipo]?.style || typeConfig['ferias'].style;
                     const p = document.createElement('div');
-                    p.className = `text-[11px] font-bold px-1.5 py-0.5 border-l-2 rounded-r truncate ${cfg.pillColor}`;
+                    p.className = `text-[11px] font-bold px-2 py-1 border-l-4 rounded-r-md truncate leading-tight ${styleClass}`;
                     p.textContent = a.colaborador;
-                    pillsContainer.appendChild(p);
+                    pills.appendChild(p);
                 });
 
-                // Renderiza Eventos/Aniversários
                 allEvents.filter(e => e.date === dateISO).forEach(e => {
-                    const typeKey = e.type === 'birthday' ? 'birthday' : (e.type === 'general' ? 'general' : 'event');
-                    const cfg = typeConfig[typeKey] || typeConfig['general'];
+                    const typeKey = e.type === 'birthday' ? 'birthday' : 'general';
+                    const styleClass = typeConfig[typeKey]?.style || typeConfig['general'].style;
                     const p = document.createElement('div');
-                    p.className = `text-[11px] font-bold px-1.5 py-0.5 border-l-2 rounded-r truncate ${cfg.pillColor}`;
-                    p.textContent = e.type === 'birthday' ? `🎂 ${e.nome}` : e.nome;
-                    pillsContainer.appendChild(p);
+                    p.className = `text-[11px] font-bold px-2 py-1 border-l-4 rounded-r-md truncate leading-tight flex gap-1 ${styleClass}`;
+                    p.textContent = e.type === 'birthday' ? `🎉 ${e.nome}` : e.nome;
+                    pills.appendChild(p);
                 });
 
-                dayCell.appendChild(pillsContainer);
-                calendarGrid.appendChild(dayCell);
+                cell.appendChild(pills);
+                calendarGrid.appendChild(cell);
+            }
+            
+            // Preencher o resto do grid para ficar bonito
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (7 - (totalCells % 7)) % 7;
+            for (let i = 0; i < remaining; i++) {
+                const empty = document.createElement('div');
+                empty.className = "bg-white/40 h-full w-full pointer-events-none";
+                calendarGrid.appendChild(empty);
             }
         }
 
-        document.getElementById('prev-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
-        document.getElementById('next-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        document.getElementById('prev-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendarGrid(); });
+        document.getElementById('next-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendarGrid(); });
 
-        // --- LÓGICA DO MODAL DE DIA (ADMIN) ---
+        // --- LÓGICA DO MODAL ADMIN (DIA CLICADO) ---
         const dayModal = document.getElementById('dayModal');
+        const dayModalBg = document.getElementById('dayModalBg');
         const dayModalContent = document.getElementById('modalContent');
         
         calendarGrid?.addEventListener('click', (e) => {
             const cell = e.target.closest('[data-date]');
             if (cell) {
                 selectedDateISO = cell.dataset.date;
-                openDayModal(selectedDateISO);
+                openAdminModal(selectedDateISO);
             }
         });
         document.getElementById('btn-fab-add')?.addEventListener('click', () => {
             selectedDateISO = new Date().toISOString().split('T')[0];
-            openDayModal(selectedDateISO);
+            openAdminModal(selectedDateISO);
         });
 
-        function openDayModal(dateStr) {
+        function openAdminModal(dateStr) {
             const d = new Date(dateStr + 'T12:00:00');
             const titleEl = document.getElementById('modal-date-title');
             if (titleEl) titleEl.textContent = `${d.getDate()} de ${monthNames[d.getMonth()]} de ${d.getFullYear()}`;
-            setAdminTab('absences');
-            updateRecordsList();
+            
+            // Limpa o formulário admin ao abrir
+            if (document.getElementById('admin-colaborador')) document.getElementById('admin-colaborador').value = '';
+            const cb = document.getElementById('admin-diatodo');
+            if (cb) { cb.checked = true; document.getElementById('admin-time-fields')?.classList.add('hidden'); }
+            if (document.getElementById('admin-hora-inicio')) document.getElementById('admin-hora-inicio').value = '';
+            if (document.getElementById('admin-hora-fim')) document.getElementById('admin-hora-fim').value = '';
+
+            setAdminModalTab('absences');
+            updateAdminRecordsList();
+            
             if (dayModal) dayModal.classList.remove('hidden');
-            setTimeout(() => { if(dayModalContent) dayModalContent.classList.add('modal-enter-active'); }, 10);
+            setTimeout(() => {
+                if(dayModalBg) dayModalBg.classList.add('overlay-enter-active');
+                if(dayModalContent) dayModalContent.classList.add('modal-enter-active');
+            }, 10);
         }
 
-        function closeDayModal() {
+        function closeAdminModal() {
+            if(dayModalBg) dayModalBg.classList.remove('overlay-enter-active');
             if(dayModalContent) dayModalContent.classList.remove('modal-enter-active');
-            setTimeout(() => { if(dayModal) dayModal.classList.add('hidden'); }, 200);
+            setTimeout(() => { if(dayModal) dayModal.classList.add('hidden'); }, 300);
         }
-        document.getElementById('close-modal')?.addEventListener('click', closeDayModal);
-        dayModal?.addEventListener('click', (e) => { if (e.target === dayModal) closeDayModal(); });
+        document.getElementById('close-modal')?.addEventListener('click', closeAdminModal);
+        dayModal?.addEventListener('click', (e) => { if (e.target === dayModal) closeAdminModal(); });
 
         document.querySelectorAll('.modal-tab-btn').forEach(btn => {
-            btn?.addEventListener('click', (e) => setAdminTab(e.target.dataset.tab));
+            btn?.addEventListener('click', (e) => setAdminModalTab(e.target.dataset.tab));
         });
 
-        function setAdminTab(tabId) {
+        function setAdminModalTab(tabId) {
             currentAdminTab = tabId;
             document.querySelectorAll('.modal-tab-btn').forEach(b => {
-                b.className = "modal-tab-btn pb-3 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition";
+                b.className = "modal-tab-btn pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors";
             });
             const activeBtn = document.querySelector(`.modal-tab-btn[data-tab="${tabId}"]`);
-            if (activeBtn) activeBtn.className = "modal-tab-btn active pb-3 text-sm font-bold text-[#2563eb] border-b-2 border-[#2563eb] transition";
+            if (activeBtn) activeBtn.className = "modal-tab-btn active pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600";
 
             document.querySelectorAll('.admin-form-content').forEach(f => f.classList.add('hidden'));
             document.getElementById(`admin-form-${tabId}`)?.classList.remove('hidden');
 
             const titleEl = document.getElementById('form-title');
             if(titleEl) {
-                if (tabId === 'absences') titleEl.textContent = 'Nova Ausência';
-                if (tabId === 'events') titleEl.textContent = 'Novo Evento';
-                if (tabId === 'birthdays') titleEl.textContent = 'Novo Aniversário';
+                if (tabId === 'absences') titleEl.textContent = 'Adicionar Ausência';
+                if (tabId === 'events') titleEl.textContent = 'Adicionar Evento';
+                if (tabId === 'birthdays') titleEl.textContent = 'Adicionar Aniversário';
             }
-            updateRecordsList();
+            updateAdminRecordsList();
         }
 
-        // Salvamento Rápido no Modal Admin
+        // Salvar via Admin Modal
+        document.getElementById('admin-diatodo')?.addEventListener('change', (e) => {
+            document.getElementById('admin-time-fields')?.classList.toggle('hidden', e.target.checked);
+        });
+
         document.getElementById('btn-save-admin-absence')?.addEventListener('click', async () => {
             const el = document.getElementById('admin-colaborador');
             const nome = el?.value.trim();
-            if(!nome) return;
-            await addDoc(absencesRef, { date: selectedDateISO, colaborador: nome, tipo: document.getElementById('admin-motivo')?.value, detalhes: "Dia todo", createdAt: Timestamp.now(), createdBy: userId });
-            if (el) el.value = '';
+            if(!nome) return showToast("Atenção", "Preencha o nome do colaborador.", "warning");
+
+            let detalhes = "Dia todo";
+            const isAllDay = document.getElementById('admin-diatodo')?.checked;
+            if (!isAllDay) {
+                const i = document.getElementById('admin-hora-inicio')?.value;
+                const f = document.getElementById('admin-hora-fim')?.value;
+                if (!i || !f) return showToast("Atenção", "Preencha os horários de início e fim.", "warning");
+                detalhes = `Das ${i} às ${f}`;
+            }
+
+            const btn = document.getElementById('btn-save-admin-absence');
+            const origHTML = btn ? btn.innerHTML : "Salvar";
+            if (btn) { btn.innerHTML = "Salvando..."; btn.disabled = true; }
+
+            try {
+                await addDoc(absencesRef, { 
+                    date: selectedDateISO, 
+                    colaborador: nome, 
+                    tipo: document.getElementById('admin-motivo')?.value, 
+                    detalhes: detalhes, 
+                    isAllDay: isAllDay,
+                    createdAt: Timestamp.now(), 
+                    createdBy: userId 
+                });
+                
+                // Reseta os campos após salvar
+                if (el) el.value = '';
+                const cb = document.getElementById('admin-diatodo');
+                if (cb) { cb.checked = true; document.getElementById('admin-time-fields')?.classList.add('hidden'); }
+                if (document.getElementById('admin-hora-inicio')) document.getElementById('admin-hora-inicio').value = '';
+                if (document.getElementById('admin-hora-fim')) document.getElementById('admin-hora-fim').value = '';
+                
+            } catch (err) {
+                showToast("Erro", "Falha ao salvar", "error");
+            } finally {
+                if (btn) { btn.innerHTML = origHTML; btn.disabled = false; }
+            }
         });
+
         document.getElementById('btn-save-admin-event')?.addEventListener('click', async () => {
             const el = document.getElementById('admin-evento');
-            const nome = el?.value.trim();
-            if(!nome) return;
-            await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'general', createdAt: Timestamp.now(), createdBy: userId });
-            if (el) el.value = '';
+            if(!el || !el.value.trim()) return;
+            await addDoc(eventsRef, { date: selectedDateISO, nome: el.value.trim(), type: 'general', createdAt: Timestamp.now(), createdBy: userId });
+            el.value = '';
         });
         document.getElementById('btn-save-admin-birthday')?.addEventListener('click', async () => {
             const el = document.getElementById('admin-aniversariante');
-            const nome = el?.value.trim();
-            if(!nome) return;
-            await addDoc(eventsRef, { date: selectedDateISO, nome, type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
-            if (el) el.value = '';
+            if(!el || !el.value.trim()) return;
+            await addDoc(eventsRef, { date: selectedDateISO, nome: el.value.trim(), type: 'birthday', createdAt: Timestamp.now(), createdBy: userId });
+            el.value = '';
         });
 
-        // Listagem no Modal Admin
-        function updateRecordsList() {
+        // Listagem
+        function updateAdminRecordsList() {
             const list = document.getElementById('records-list');
+            const emptyState = document.getElementById('empty-state');
             if(!list) return;
+            
             list.innerHTML = '';
             
             let records = [];
             if (currentAdminTab === 'absences') records = allAbsences.filter(a => a.date === selectedDateISO).map(a => ({...a, _category: 'absence'}));
             else if (currentAdminTab === 'events') records = allEvents.filter(e => e.date === selectedDateISO && e.type !== 'birthday').map(e => ({...e, _category: 'event'}));
             else if (currentAdminTab === 'birthdays') records = allEvents.filter(e => e.date === selectedDateISO && e.type === 'birthday').map(e => ({...e, _category: 'event'}));
-
-            const emptyState = document.getElementById('empty-state');
 
             if (records.length === 0) {
                 if (emptyState) emptyState.classList.remove('hidden');
@@ -772,24 +908,23 @@
                 }
 
                 const item = document.createElement('div');
-                item.className = "flex justify-between items-center py-4 border-b border-gray-100 last:border-0";
+                item.className = "flex items-center justify-between p-3 bg-white hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-xl transition-all group";
                 item.innerHTML = `
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-gray-900 text-[15px] tracking-tight">${mainName}</span>
-                            <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">${cfgLabel}</span>
+                    <div class="flex-1 min-w-0 pr-4">
+                        <div class="flex items-center gap-2.5 mb-1">
+                            <span class="font-bold text-slate-800 text-sm truncate">${mainName}</span>
+                            <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest shrink-0">${cfgLabel}</span>
                         </div>
-                        <p class="text-sm text-gray-500">${subText}</p>
-                        ${isAbsence && rec.observacao ? `<p class="text-xs text-gray-400 italic mt-1">${rec.observacao}</p>` : ''}
+                        <p class="text-xs font-medium text-slate-500 truncate">${subText}</p>
+                        ${isAbsence && rec.observacao ? `<p class="text-xs text-slate-400 italic mt-1 truncate">"${rec.observacao}"</p>` : ''}
                     </div>
-                    <div class="flex items-center gap-3 text-[#60a5fa]">
-                        <button class="btn-delete hover:text-red-500 transition p-2" aria-label="Excluir">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
+                    <button class="btn-delete w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 flex items-center justify-center shrink-0 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors focus:outline-none" aria-label="Excluir">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
                 `;
+                
                 item.querySelector('.btn-delete')?.addEventListener('click', () => {
-                    showConfirmDialog(async () => {
+                    requestDeleteConfirm(async () => {
                         const ref = isAbsence ? absencesRef : eventsRef;
                         await deleteDoc(doc(ref, rec.id));
                         showToast("Excluído", "Registro removido com sucesso.");
@@ -799,56 +934,69 @@
             });
         }
 
-        // Lógica do Modal de Confirmação customizado
-        let confirmAction = null;
-        function showConfirmDialog(onConfirm) {
-            confirmAction = onConfirm;
-            const confirmModal = document.getElementById('confirmModal');
-            const confirmContent = document.getElementById('confirmModalContent');
-            if (confirmModal) confirmModal.classList.remove('hidden');
-            setTimeout(() => { if(confirmContent) confirmContent.classList.add('modal-enter-active'); }, 10);
+        // Lógica de Confirmação customizada (Dialog)
+        let deleteAction = null;
+        function requestDeleteConfirm(actionFn) {
+            deleteAction = actionFn;
+            const m = document.getElementById('confirmModal');
+            const bg = document.getElementById('confirmModalBg');
+            const ct = document.getElementById('confirmModalContent');
+            
+            if (m) m.classList.remove('hidden');
+            setTimeout(() => {
+                if(bg) bg.classList.add('overlay-enter-active');
+                if(ct) ct.classList.add('modal-enter-active');
+            }, 10);
         }
 
-        document.getElementById('btn-cancel-confirm')?.addEventListener('click', () => {
-            const confirmContent = document.getElementById('confirmModalContent');
-            const confirmModal = document.getElementById('confirmModal');
-            if (confirmContent) confirmContent.classList.remove('modal-enter-active');
-            setTimeout(() => { if(confirmModal) confirmModal.classList.add('hidden'); }, 200);
-            confirmAction = null;
-        });
+        function closeConfirmModal() {
+            const m = document.getElementById('confirmModal');
+            const bg = document.getElementById('confirmModalBg');
+            const ct = document.getElementById('confirmModalContent');
+            
+            if(bg) bg.classList.remove('overlay-enter-active');
+            if(ct) ct.classList.remove('modal-enter-active');
+            setTimeout(() => { if(m) m.classList.add('hidden'); }, 300);
+            deleteAction = null;
+        }
 
+        document.getElementById('btn-cancel-confirm')?.addEventListener('click', closeConfirmModal);
         document.getElementById('btn-accept-confirm')?.addEventListener('click', () => {
-            if (confirmAction) confirmAction();
-            const confirmContent = document.getElementById('confirmModalContent');
-            const confirmModal = document.getElementById('confirmModal');
-            if (confirmContent) confirmContent.classList.remove('modal-enter-active');
-            setTimeout(() => { if(confirmModal) confirmModal.classList.add('hidden'); }, 200);
-            confirmAction = null;
+            if (deleteAction) deleteAction();
+            closeConfirmModal();
         });
 
-        // --- UTILIDADES ---
-        let toastTimer;
+        // --- SISTEMA DE TOAST NOTIFICATIONS ---
+        let tTimer;
         function showToast(title, msg, type = "info") {
             const toast = document.getElementById('notification-toast');
-            const iconContainer = document.getElementById('toast-icon-container');
-            if(!toast || !iconContainer) return;
+            const iconWrap = document.getElementById('toast-icon-container');
+            if(!toast || !iconWrap) return;
             
             if (type === "error" || type === "warning") {
-                iconContainer.className = "w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-red-600";
-                iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+                iconWrap.className = "w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 border border-red-100 shadow-sm";
+                iconWrap.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
             } else {
-                iconContainer.className = "w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600";
-                iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                iconWrap.className = "w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-100 shadow-sm";
+                iconWrap.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
             }
 
-            const titleEl = document.getElementById('notification-title');
-            const msgEl = document.getElementById('notification-message');
-            if(titleEl) titleEl.textContent = title;
-            if(msgEl) msgEl.textContent = msg;
+            const tEl = document.getElementById('notification-title');
+            const mEl = document.getElementById('notification-message');
+            if(tEl) tEl.textContent = title;
+            if(mEl) mEl.textContent = msg;
             
-            clearTimeout(toastTimer);
-            toast.classList.remove('opacity-0', 'translate-y-full');
-            toastTimer = setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-full'); }, 3000);
+            clearTimeout(tTimer);
+            toast.classList.remove('opacity-0');
+            // Remove as translações off-screen dependendo se é mobile ou desktop
+            toast.classList.remove('translate-y-[-20px]', 'sm:translate-y-10');
+            
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            tTimer = setTimeout(() => { 
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-[-20px]', 'sm:translate-y-10'); 
+            }, 3500);
         }
 
         // Init
